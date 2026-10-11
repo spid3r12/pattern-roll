@@ -1,0 +1,2586 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>@font-face{font-family:'Figtree';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/figtree-latin-400-normal.woff2) format('woff2');}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/figtree-latin-600-normal.woff2) format('woff2');}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/figtree-latin-700-normal.woff2) format('woff2');}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/bricolage-grotesque-latin-700-normal.woff2) format('woff2');}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:800;font-display:swap;src:url(fonts/bricolage-grotesque-latin-800-normal.woff2) format('woff2');}
+html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Pattern Roll</title>
+<style>
+/* Layout: the paper sheet stays pinned at the top on a phone and sits on the left on wide screens; the controls scroll beneath or beside it. */
+:root {
+  --bg: #EDF0EE;
+  --surface: #FAFBFA;
+  --fg: #16201E;
+  --muted: #56635E;
+  --line: #D5DBD8;
+  --line-strong: #AEB9B5;
+  --accent: #0B7A75;
+  --on-accent: #FFFFFF;
+  --shadow: rgba(18, 38, 34, 0.30);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1514;
+    --surface: #18201F;
+    --fg: #E7EEEC;
+    --muted: #93A19C;
+    --line: #2A3533;
+    --line-strong: #43524E;
+    --accent: #4FD1C5;
+    --on-accent: #06201D;
+    --shadow: rgba(0, 0, 0, 0.60);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1514;
+  --surface: #18201F;
+  --fg: #E7EEEC;
+  --muted: #93A19C;
+  --line: #2A3533;
+  --line-strong: #43524E;
+  --accent: #4FD1C5;
+  --on-accent: #06201D;
+  --shadow: rgba(0, 0, 0, 0.60);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 15px/1.45 var(--font-body);
+  padding-inline: 16px;
+  padding-block: 8px 104px;
+}
+button { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.top {
+  max-width: 1100px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 6px 10px;
+}
+h1 {
+  margin: 0;
+  font: 800 24px/1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.btn {
+  min-height: 42px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 14px/1 var(--font-body);
+  cursor: pointer;
+}
+.btn:active { transform: translateY(1px); }
+
+.app {
+  max-width: 1100px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.sheet-wrap {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 3;
+  background: var(--bg);
+  padding-block: 2px 8px;
+}
+.sheet {
+  --maxh: clamp(200px, 34vh, 360px);
+  height: var(--maxh);
+  margin-inline: auto;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 var(--line), 0 12px 24px -16px var(--shadow);
+}
+.sheet.fixed {
+  height: auto;
+  width: min(100%, calc(var(--maxh) * var(--ar)));
+  aspect-ratio: var(--ar);
+}
+#sheet {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: pointer;
+}
+.perf {
+  margin-top: 8px;
+  padding-top: 5px;
+  border-top: 2px dashed var(--line-strong);
+  text-align: center;
+  font: 600 10px/1 var(--font-body);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.controls {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.group {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+.group:first-child { border-top: 0; }
+.group h2 {
+  margin: 0;
+  font: 700 11px/1 var(--font-body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field { display: grid; gap: 6px; }
+.lab { font: 600 13px/1.2 var(--font-body); color: var(--muted); }
+
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .chip {
+  min-height: 48px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: 600 14px/1 var(--font-body);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, transform 0.08s;
+}
+.seg button:active, .chip:active, .step:active, .dockbtn:active { transform: scale(0.97); }
+.ico { display: inline-flex; flex: none; }
+.ico svg { display: block; }
+.seg button[aria-pressed="true"], .chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tray {
+  max-height: 340px;
+  overflow-y: auto;
+  align-content: start;
+  grid-auto-rows: max-content;
+  padding: 3px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 8px;
+}
+.motif {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  cursor: pointer;
+  display: block;
+  min-width: 0;
+}
+.motif { aspect-ratio: 1; }
+.motif canvas { display: block; width: 100%; height: 100%; }
+.motif[data-n]::after {
+  content: attr(data-n);
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 11px/18px var(--font-body);
+  text-align: center;
+}
+.motif[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.mixbar { display: flex; gap: 8px; }
+.mixbar button {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 76px;
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font: 700 20px/1 var(--font-body);
+  cursor: pointer;
+}
+.mixbar button.empty { border: 2px dashed var(--line-strong); }
+.mixbar canvas { display: block; width: 100%; height: 100%; }
+.mixbar .num {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  font: 700 11px/18px var(--font-body); text-align: center;
+}
+.savebtn { display: inline-flex; align-items: center; gap: 8px; }
+.savebtn:disabled { opacity: 0.55; cursor: progress; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); max-width: 62ch; }
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  align-items: center;
+}
+.row label { font: 600 13px/1.2 var(--font-body); color: var(--muted); }
+.row input { grid-column: 1 / -1; width: 100%; min-height: 34px; accent-color: var(--accent); }
+
+.pals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 10px;
+}
+.pal {
+  aspect-ratio: 1;
+  max-width: 100%;
+  padding: 0;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--p0) 0 48%, var(--p1) 48% 74%, var(--p2) 74% 100%);
+  cursor: pointer;
+}
+.pal[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.group > * { min-width: 0; }
+.seg.scroll { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.seg.scroll button { flex: 0 0 auto; }
+.seg.equal { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 6px; }
+.seg.equal button { flex-direction: column; gap: 6px; padding: 10px 4px; min-height: 64px; font-size: 12.5px; border-radius: 14px; }
+.seg.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.seg.cards button { flex-direction: column; gap: 6px; border-radius: 14px; padding: 10px 6px 8px; min-height: 92px; font-size: 13px; }
+.seg.cards .dims { font: 500 11px/1 var(--font-body); opacity: 0.75; font-variant-numeric: tabular-nums; }
+.shapebox { display: flex; align-items: center; justify-content: center; width: 100%; height: 44px; }
+.shapebox i { display: block; border: 2px solid currentColor; border-radius: 4px; background: color-mix(in srgb, currentColor 14%, transparent); }
+.shapebox i.free { border-style: dashed; }
+
+.slider { display: grid; gap: 8px; }
+.sl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.sl-head label { font: 600 14px/1.2 var(--font-body); color: var(--fg); }
+.bubble {
+  min-width: 52px; padding: 6px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+  font: 700 15px/1 var(--font-body); text-align: center; font-variant-numeric: tabular-nums;
+}
+.sl-body { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 10px; align-items: center; }
+.step {
+  width: 48px; height: 48px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--fg);
+  font: 600 24px/1 var(--font-body); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.step:disabled { opacity: 0.35; cursor: not-allowed; }
+.sl-ends { display: flex; justify-content: space-between; gap: 12px; font: 500 12px/1.2 var(--font-body); color: var(--muted); padding-inline: 58px; }
+.slider input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 48px; margin: 0; background: transparent; cursor: pointer; touch-action: pan-y;
+  --pct: 50%;
+}
+.slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 12px; border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--pct), var(--line) var(--pct));
+}
+.slider input[type="range"]::-moz-range-track { height: 12px; border-radius: 999px; background: var(--line); }
+.slider input[type="range"]::-moz-range-progress { height: 12px; border-radius: 999px; background: var(--accent); }
+.slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 34px; height: 34px; margin-top: -11px; border-radius: 50%;
+  background: var(--surface); border: 4px solid var(--accent);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.slider input[type="range"]::-moz-range-thumb {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface); border: 4px solid var(--accent);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.slider input[type="range"]:focus-visible { outline-offset: 0; border-radius: 999px; }
+
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+.dock-in { max-width: 1100px; margin-inline: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.dockbtn {
+  min-height: 56px; padding: 8px 6px; border-radius: 14px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg);
+  font: 700 12px/1.1 var(--font-body); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+}
+.dockbtn.main { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.dockbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.dockbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 11;
+  max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 999px;
+  background: var(--fg); color: var(--bg); font: 600 13px/1.3 var(--font-body); text-align: center;
+  box-shadow: 0 6px 20px var(--shadow);
+}
+.toast:empty { display: none; }
+.pal.custom { border-style: dashed; }
+.editor { display: grid; gap: 12px; }
+.slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.slots button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: 600 14px/1 var(--font-body);
+  cursor: pointer;
+}
+.slots button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 8px; }
+.sw { aspect-ratio: 1; max-width: 100%; padding: 0; border: 2px solid var(--line-strong); border-radius: 10px; cursor: pointer; }
+.sw[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+@media (min-width: 880px) {
+  .app {
+    grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
+    align-items: start;
+    gap: 24px;
+  }
+  .sheet-wrap { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+  .sheet { --maxh: clamp(380px, 74vh, 700px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<header class="top">
+  <h1>Pattern Roll</h1>
+  <button type="button" id="surprise" class="btn">Surprise me</button>
+</header>
+
+<main class="app">
+  <section class="sheet-wrap" aria-label="Pattern sheet">
+    <div class="sheet" id="sheetBox">
+      <canvas id="sheet" role="img" aria-label="Pattern sheet. Tap a tile to change or turn it."></canvas>
+    </div>
+    <div class="perf" aria-hidden="true">tear here</div>
+  </section>
+
+  <section class="controls" aria-label="Pattern controls">
+    <div class="group">
+      <h2>Motif</h2>
+      <div class="seg equal" style="--n:4" id="seg-mode" role="group" aria-label="What tapping a motif does"></div>
+      <div class="seg scroll" id="seg-cat" role="group" aria-label="Types of motif. Switch on as many as you like."></div>
+      <div class="mixbar" id="mixbar" role="group" aria-label="Your mix" hidden></div>
+      <div class="tray" id="tray" role="group" aria-label="Motifs"></div>
+      <div class="field" id="field-mix" hidden>
+        <span class="lab" id="lab-mix">How to mix them</span>
+        <div class="seg" id="seg-mixRule" role="group" aria-labelledby="lab-mix"></div>
+      </div>
+      <p class="hint" id="hint"></p>
+    </div>
+
+    <div class="group">
+      <h2>Arrange</h2>
+      <div class="field">
+        <span class="lab" id="lab-format">Sheet shape</span>
+        <div class="seg cards" id="seg-format" role="group" aria-labelledby="lab-format"></div>
+      </div>
+      <div class="field">
+        <span class="lab" id="lab-layout">Layout</span>
+        <div class="seg equal" id="seg-layout" role="group" aria-labelledby="lab-layout"></div>
+      </div>
+      <div class="field">
+        <span class="lab" id="lab-turn">Turns</span>
+        <div class="seg equal" style="--n:4" id="seg-turn" role="group" aria-labelledby="lab-turn"></div>
+      </div>
+      <div class="slider">
+        <div class="sl-head"><label for="cols">Tiles across</label><output class="bubble" id="colsOut" for="cols">5</output></div>
+        <div class="sl-body">
+          <button type="button" class="step" data-for="cols" data-d="-1" aria-label="Fewer tiles">−</button>
+          <input type="range" id="cols" min="3" max="12" step="1" value="5">
+          <button type="button" class="step" data-for="cols" data-d="1" aria-label="More tiles">+</button>
+        </div>
+        <div class="sl-ends"><span>Fewer, bigger</span><span>More, smaller</span></div>
+      </div>
+      <div class="slider">
+        <div class="sl-head"><label for="size">Motif size</label><output class="bubble" id="sizeOut" for="size">80%</output></div>
+        <div class="sl-body">
+          <button type="button" class="step" data-for="size" data-d="-1" aria-label="Smaller motifs">−</button>
+          <input type="range" id="size" min="40" max="100" step="2" value="80">
+          <button type="button" class="step" data-for="size" data-d="1" aria-label="Bigger motifs">+</button>
+        </div>
+        <div class="sl-ends"><span>Small</span><span>Fills the tile</span></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="chip" id="reset">Reset tiles</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Look</h2>
+      <div class="pals" id="pals" role="group" aria-label="Colours"></div>
+      <p class="hint">The dashed circle is yours. Pick it to choose your own colours.</p>
+      <div class="editor" id="editor" hidden>
+        <div class="slots" id="slots" role="group" aria-label="Which colour to change"></div>
+        <div class="swatches" id="swatches" role="group" aria-label="Pick a colour"></div>
+        <div class="actions">
+          <button type="button" class="chip" id="swapBtn">Swap background and main</button>
+          <button type="button" class="chip" id="randBtn">Random colours</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab" id="lab-style">Finish</span>
+        <div class="seg equal" style="--n:2" id="seg-style" role="group" aria-labelledby="lab-style"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<p class="toast" id="saveMsg" role="status" aria-live="polite"></p>
+<nav class="dock" aria-label="Ripple and saving">
+  <div class="dock-in">
+    <button type="button" class="dockbtn" id="ripple" aria-pressed="false"><span class="ico" data-ico="ripple"></span>Ripple</button>
+    <button type="button" class="dockbtn main" id="savePng"><span class="ico" data-ico="picture"></span>Save picture</button>
+    <button type="button" class="dockbtn main" id="saveGif"><span class="ico" data-ico="film"></span>Save animation</button>
+  </div>
+</nav>
+
+<script>
+(function () {
+  'use strict';
+    var TAU = Math.PI * 2;
+
+  /* ---------- shape helpers (unit space, roughly -1 to 1) ---------- */
+  function circ(c, x, y, r) { c.moveTo(x + r, y); c.arc(x, y, r, 0, TAU); }
+  function poly(c, pts) {
+    for (var i = 0; i < pts.length; i++) {
+      if (i) c.lineTo(pts[i][0], pts[i][1]); else c.moveTo(pts[i][0], pts[i][1]);
+    }
+    c.closePath();
+  }
+  function reg(n, r, off) {
+    if (off === undefined) off = -Math.PI / 2;
+    return function (c) {
+      var pts = [];
+      for (var i = 0; i < n; i++) {
+        var a = off + i * TAU / n;
+        pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+      }
+      poly(c, pts);
+    };
+  }
+  function star(n, ro, ri) {
+    return function (c) {
+      var pts = [];
+      for (var i = 0; i < n * 2; i++) {
+        var a = -Math.PI / 2 + i * Math.PI / n;
+        var r = i % 2 ? ri : ro;
+        pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+      }
+      poly(c, pts);
+    };
+  }
+
+  function rrect(c, x, y, w, h, r) {
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y); c.arcTo(x + w, y, x + w, y + r, r);
+    c.lineTo(x + w, y + h - r); c.arcTo(x + w, y + h, x + w - r, y + h, r);
+    c.lineTo(x + r, y + h); c.arcTo(x, y + h, x, y + h - r, r);
+    c.lineTo(x, y + r); c.arcTo(x, y, x + r, y, r);
+    c.closePath();
+  }
+  function crenel(c, x, w, y) {
+    var mw = w / 5;
+    for (var i = 0; i < 3; i++) c.rect(x + i * 2 * mw, y - 0.16, mw, 0.16);
+  }
+
+  /* Each motif calls S(role, build). Roles: 'a' main colour, 'b' accent colour, 'cut' background colour.
+     Accent and cut shapes stay inside a main shape so every colour set and the embossed finish read clearly. */
+  var MOTIFS = [
+    { name: 'Dot', draw: function (S) { S('a', function (c) { circ(c, 0, 0, 0.62); }); } },
+    { name: 'Ring', draw: function (S) {
+        S('a', function (c) { circ(c, 0, 0, 0.86); });
+        S('cut', function (c) { circ(c, 0, 0, 0.56); });
+        S('b', function (c) { circ(c, 0, 0, 0.22); });
+    } },
+    { name: 'Diamond', draw: function (S) {
+        S('a', reg(4, 0.92));
+        S('b', reg(4, 0.42));
+    } },
+    { name: 'Hexagon', draw: function (S) {
+        S('a', reg(6, 0.92));
+        S('b', reg(6, 0.5));
+    } },
+    { name: 'Flower', draw: function (S) {
+        S('a', function (c) {
+          for (var i = 0; i < 6; i++) {
+            var a = i * TAU / 6;
+            circ(c, Math.cos(a) * 0.52, Math.sin(a) * 0.52, 0.36);
+          }
+        });
+        S('b', function (c) { circ(c, 0, 0, 0.26); });
+    } },
+    { name: 'Clover', draw: function (S) {
+        S('a', function (c) {
+          circ(c, 0.42, 0, 0.42); circ(c, -0.42, 0, 0.42);
+          circ(c, 0, 0.42, 0.42); circ(c, 0, -0.42, 0.42);
+        });
+        S('b', function (c) { circ(c, 0, 0, 0.2); });
+    } },
+    { name: 'Star', draw: function (S) {
+        S('a', star(8, 0.95, 0.5));
+        S('b', function (c) { circ(c, 0, 0, 0.2); });
+    } },
+    { name: 'Heart', draw: function (S) {
+        S('a', function (c) {
+          c.moveTo(0, 0.8);
+          c.bezierCurveTo(-1.05, 0.1, -0.75, -0.8, 0, -0.35);
+          c.bezierCurveTo(0.75, -0.8, 1.05, 0.1, 0, 0.8);
+          c.closePath();
+        });
+    } },
+    { name: 'Leaf', draw: function (S) {
+        S('a', function (c) {
+          c.moveTo(0, -0.92);
+          c.quadraticCurveTo(1.15, -0.15, 0, 0.92);
+          c.quadraticCurveTo(-1.15, -0.15, 0, -0.92);
+          c.closePath();
+        });
+        S('cut', function (c) { c.rect(-0.035, -0.56, 0.07, 1.3); });
+    } },
+    { name: 'Scale', draw: function (S) {
+        S('a', function (c) { c.moveTo(-0.9, 0.45); c.arc(0, 0.45, 0.9, Math.PI, 0); c.closePath(); });
+        S('cut', function (c) { c.moveTo(-0.6, 0.45); c.arc(0, 0.45, 0.6, Math.PI, 0); c.closePath(); });
+        S('b', function (c) { c.moveTo(-0.3, 0.45); c.arc(0, 0.45, 0.3, Math.PI, 0); c.closePath(); });
+    } },
+    { name: 'Wave', draw: function (S) {
+        S('a', function (c) {
+          var N = 28, i, x;
+          for (i = 0; i <= N; i++) {
+            x = -1 + 2 * i / N;
+            if (i) c.lineTo(x, 0.35 * Math.sin(x * TAU) - 0.16); else c.moveTo(x, 0.35 * Math.sin(x * TAU) - 0.16);
+          }
+          for (i = N; i >= 0; i--) {
+            x = -1 + 2 * i / N;
+            c.lineTo(x, 0.35 * Math.sin(x * TAU) + 0.16);
+          }
+          c.closePath();
+        });
+    } },
+    { name: 'Plus', draw: function (S) {
+        S('a', function (c) { c.rect(-0.22, -0.86, 0.44, 1.72); c.rect(-0.86, -0.22, 1.72, 0.44); });
+        S('b', function (c) { circ(c, 0, 0, 0.14); });
+    } },
+
+    /* ---- animals ---- */
+    { name: 'Cat', cat: 'animals', draw: function (S) {
+        S('a', function (c) {
+          poly(c, [[-0.66, -0.12], [-0.62, -0.88], [-0.1, -0.46]]);
+          poly(c, [[0.66, -0.12], [0.62, -0.88], [0.1, -0.46]]);
+        });
+        S('a', function (c) { circ(c, 0, 0.15, 0.66); });
+        S('cut', function (c) { circ(c, -0.24, 0.06, 0.1); circ(c, 0.24, 0.06, 0.1); });
+        S('b', function (c) { poly(c, [[-0.1, 0.24], [0.1, 0.24], [0, 0.36]]); });
+        S('cut', function (c) {
+          c.rect(-0.56, 0.34, 0.28, 0.045); c.rect(-0.56, 0.45, 0.28, 0.045);
+          c.rect(0.28, 0.34, 0.28, 0.045); c.rect(0.28, 0.45, 0.28, 0.045);
+        });
+    } },
+    { name: 'Fish', cat: 'animals', draw: function (S) {
+        S('a', function (c) {
+          poly(c, [[-0.3, -0.35], [0.15, -0.3], [-0.05, -0.85]]);
+          poly(c, [[-0.2, 0.35], [0.1, 0.32], [-0.08, 0.72]]);
+        });
+        S('a', function (c) {
+          c.moveTo(-0.85, 0);
+          c.quadraticCurveTo(-0.2, -1.0, 0.45, 0);
+          c.quadraticCurveTo(-0.2, 1.0, -0.85, 0);
+          c.closePath();
+        });
+        S('a', function (c) { poly(c, [[0.35, 0], [0.93, -0.42], [0.93, 0.42]]); });
+        S('b', function (c) { c.rect(-0.1, -0.3, 0.09, 0.6); c.rect(0.12, -0.26, 0.09, 0.52); });
+        S('cut', function (c) { circ(c, -0.52, -0.08, 0.085); });
+    } },
+    { name: 'Bird', cat: 'animals', draw: function (S) {
+        S('a', function (c) { poly(c, [[0.4, 0.05], [0.96, -0.28], [0.96, 0.22], [0.42, 0.3]]); });
+        S('a', function (c) { circ(c, 0.05, 0.15, 0.6); });
+        S('a', function (c) { circ(c, -0.4, -0.4, 0.32); });
+        S('a', function (c) { poly(c, [[-0.68, -0.52], [-0.98, -0.4], [-0.68, -0.27]]); });
+        S('cut', function (c) { circ(c, -0.47, -0.48, 0.07); });
+        S('b', function (c) {
+          c.moveTo(-0.25, 0.15);
+          c.quadraticCurveTo(0.05, -0.3, 0.5, 0.02);
+          c.quadraticCurveTo(0.15, 0.55, -0.25, 0.15);
+          c.closePath();
+        });
+    } },
+
+    /* ---- buildings ---- */
+    { name: 'House', cat: 'buildings', draw: function (S) {
+        S('a', function (c) { c.rect(0.38, -0.8, 0.2, 0.5); });
+        S('a', function (c) { poly(c, [[-0.92, -0.12], [0, -0.88], [0.92, -0.12]]); });
+        S('a', function (c) { c.rect(-0.68, -0.02, 1.36, 0.88); });
+        S('cut', function (c) { c.rect(-0.5, 0.1, 0.28, 0.28); c.rect(0.22, 0.1, 0.28, 0.28); });
+        S('cut', function (c) { c.rect(-0.15, 0.3, 0.3, 0.56); });
+    } },
+    { name: 'Tower', cat: 'buildings', draw: function (S) {
+        S('a', function (c) { c.rect(-0.03, -1.0, 0.06, 0.2); });
+        S('a', function (c) { c.rect(-0.46, -0.82, 0.92, 1.72); });
+        S('a', function (c) { c.rect(-0.56, -0.9, 1.12, 0.12); });
+        S('cut', function (c) {
+          for (var r = 0; r < 4; r++) for (var q = 0; q < 3; q++) {
+            if ((r + q) % 3 !== 0) c.rect(-0.37 + q * 0.28, -0.64 + r * 0.3, 0.18, 0.18);
+          }
+        });
+        S('b', function (c) {
+          for (var r = 0; r < 4; r++) for (var q = 0; q < 3; q++) {
+            if ((r + q) % 3 === 0) c.rect(-0.37 + q * 0.28, -0.64 + r * 0.3, 0.18, 0.18);
+          }
+        });
+        S('cut', function (c) { c.rect(-0.13, 0.5, 0.26, 0.4); });
+    } },
+    { name: 'Castle', cat: 'buildings', draw: function (S) {
+        S('a', function (c) { c.rect(-0.02, -0.98, 0.04, 0.38); poly(c, [[0.02, -0.98], [0.3, -0.87], [0.02, -0.76]]); });
+        S('a', function (c) {
+          c.rect(-0.3, -0.45, 0.6, 1.35); crenel(c, -0.3, 0.6, -0.45);
+          c.rect(-0.9, -0.25, 0.38, 1.15); crenel(c, -0.9, 0.38, -0.25);
+          c.rect(0.52, -0.25, 0.38, 1.15); crenel(c, 0.52, 0.38, -0.25);
+          c.rect(-0.52, 0.2, 1.04, 0.7);
+        });
+        S('cut', function (c) {
+          c.moveTo(-0.16, 0.9); c.lineTo(-0.16, 0.5); c.arc(0, 0.5, 0.16, Math.PI, 0); c.lineTo(0.16, 0.9); c.closePath();
+        });
+        S('cut', function (c) {
+          c.rect(-0.06, -0.28, 0.12, 0.22);
+          c.rect(-0.76, -0.05, 0.1, 0.26);
+          c.rect(0.66, -0.05, 0.1, 0.26);
+        });
+    } },
+
+    /* ---- cars ---- */
+    { name: 'Car', cat: 'cars', draw: function (S) {
+        S('a', function (c) { rrect(c, -0.92, -0.05, 1.84, 0.5, 0.14); });
+        S('a', function (c) { poly(c, [[-0.55, -0.05], [-0.34, -0.5], [0.3, -0.5], [0.58, -0.05]]); });
+        S('cut', function (c) {
+          poly(c, [[-0.44, -0.09], [-0.28, -0.42], [-0.02, -0.42], [-0.02, -0.09]]);
+          poly(c, [[0.08, -0.09], [0.08, -0.42], [0.26, -0.42], [0.46, -0.09]]);
+        });
+        S('a', function (c) { circ(c, -0.52, 0.45, 0.25); circ(c, 0.52, 0.45, 0.25); });
+        S('b', function (c) { circ(c, -0.52, 0.45, 0.1); circ(c, 0.52, 0.45, 0.1); rrect(c, 0.8, 0.02, 0.1, 0.14, 0.03); });
+    } },
+    { name: 'Bus', cat: 'cars', draw: function (S) {
+        S('a', function (c) { rrect(c, -0.92, -0.52, 1.84, 0.96, 0.16); });
+        S('cut', function (c) {
+          for (var i = 0; i < 4; i++) c.rect(-0.8 + i * 0.38, -0.38, 0.3, 0.3);
+          c.rect(0.72, -0.38, 0.14, 0.42);
+        });
+        S('b', function (c) { c.rect(-0.92, 0.12, 1.84, 0.1); });
+        S('a', function (c) { circ(c, -0.52, 0.44, 0.22); circ(c, 0.52, 0.44, 0.22); });
+        S('b', function (c) { circ(c, -0.52, 0.44, 0.09); circ(c, 0.52, 0.44, 0.09); });
+    } },
+    { name: 'Truck', cat: 'cars', draw: function (S) {
+        S('a', function (c) { rrect(c, -0.92, -0.56, 1.16, 0.96, 0.08); });
+        S('a', function (c) { poly(c, [[0.3, -0.22], [0.6, -0.22], [0.93, 0.12], [0.93, 0.4], [0.3, 0.4]]); });
+        S('cut', function (c) { poly(c, [[0.4, -0.14], [0.56, -0.14], [0.78, 0.08], [0.4, 0.08]]); });
+        S('a', function (c) { circ(c, -0.56, 0.42, 0.22); circ(c, 0.62, 0.42, 0.22); });
+        S('b', function (c) { circ(c, -0.56, 0.42, 0.09); circ(c, 0.62, 0.42, 0.09); });
+    } },
+
+    /* ---- flowers ---- */
+    { name: 'Tulip', cat: 'flowers', draw: function (S) {
+        S('a', function (c) {
+          c.moveTo(0, 0.18);
+          c.bezierCurveTo(-0.58, 0.12, -0.58, -0.4, -0.44, -0.8);
+          c.lineTo(-0.21, -0.46);
+          c.lineTo(0, -0.84);
+          c.lineTo(0.21, -0.46);
+          c.lineTo(0.44, -0.8);
+          c.bezierCurveTo(0.58, -0.4, 0.58, 0.12, 0, 0.18);
+          c.closePath();
+        });
+        S('cut', function (c) {
+          poly(c, [[-0.23, -0.44], [-0.19, -0.44], [-0.04, 0.1], [-0.09, 0.11]]);
+          poly(c, [[0.23, -0.44], [0.19, -0.44], [0.04, 0.1], [0.09, 0.11]]);
+        });
+        S('a', function (c) { c.rect(-0.045, 0.1, 0.09, 0.82); });
+        S('a', function (c) {
+          c.moveTo(-0.04, 0.78); c.quadraticCurveTo(-0.6, 0.72, -0.62, 0.26);
+          c.quadraticCurveTo(-0.2, 0.36, -0.04, 0.78); c.closePath();
+        });
+        S('a', function (c) {
+          c.moveTo(0.04, 0.55); c.quadraticCurveTo(0.5, 0.5, 0.54, 0.12);
+          c.quadraticCurveTo(0.2, 0.2, 0.04, 0.55); c.closePath();
+        });
+    } },
+    { name: 'Daisy', cat: 'flowers', draw: function (S) {
+        S('a', function (c) {
+          for (var i = 0; i < 12; i++) {
+            var a = i * TAU / 12, ca = Math.cos(a), sa = Math.sin(a);
+            var bx = ca * 0.2, by = sa * 0.2, tx = ca * 0.95, ty = sa * 0.95;
+            var mx = ca * 0.6, my = sa * 0.6;
+            c.moveTo(bx, by);
+            c.quadraticCurveTo(mx - sa * 0.27, my + ca * 0.27, tx, ty);
+            c.quadraticCurveTo(mx + sa * 0.27, my - ca * 0.27, bx, by);
+          }
+        });
+        S('a', function (c) { circ(c, 0, 0, 0.36); });
+        S('b', function (c) { circ(c, 0, 0, 0.24); });
+    } },
+    { name: 'Sunflower', cat: 'flowers', draw: function (S) {
+        S('a', star(16, 0.96, 0.62));
+        S('b', function (c) { circ(c, 0, 0, 0.5); });
+        S('a', function (c) {
+          var i, a;
+          circ(c, 0, 0, 0.06);
+          for (i = 0; i < 8; i++) { a = i * TAU / 8; circ(c, Math.cos(a) * 0.25, Math.sin(a) * 0.25, 0.05); }
+          for (i = 0; i < 12; i++) { a = i * TAU / 12 + 0.2; circ(c, Math.cos(a) * 0.39, Math.sin(a) * 0.39, 0.045); }
+        });
+    } }
+  ];
+
+  /* ---------- path-string helpers for compact motifs (unit space, y down) ---------- */
+  function n3(v) { return Math.round(v * 1000) / 1000; }
+  function Cc(x, y, r) {
+    return 'M' + n3(x - r) + ' ' + n3(y) + 'a' + r + ' ' + r + ' 0 1 0 ' + n3(2 * r) + ' 0a' + r + ' ' + r + ' 0 1 0 ' + n3(-2 * r) + ' 0z';
+  }
+  function El(x, y, rx, ry) {
+    return 'M' + n3(x - rx) + ' ' + n3(y) + 'a' + rx + ' ' + ry + ' 0 1 0 ' + n3(2 * rx) + ' 0a' + rx + ' ' + ry + ' 0 1 0 ' + n3(-2 * rx) + ' 0z';
+  }
+  function ElR(x, y, rx, ry, deg) {
+    var t = deg * Math.PI / 180, dx = rx * Math.cos(t), dy = rx * Math.sin(t);
+    return 'M' + n3(x - dx) + ' ' + n3(y - dy) + 'A' + rx + ' ' + ry + ' ' + deg + ' 1 0 ' + n3(x + dx) + ' ' + n3(y + dy) +
+      'A' + rx + ' ' + ry + ' ' + deg + ' 1 0 ' + n3(x - dx) + ' ' + n3(y - dy) + 'z';
+  }
+  function Rc(x, y, w, h) { return 'M' + x + ' ' + y + 'h' + w + 'v' + h + 'h' + (-w) + 'z'; }
+  function Rr(x, y, w, h, r) {
+    return 'M' + n3(x + r) + ' ' + y + 'H' + n3(x + w - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + n3(x + w) + ' ' + n3(y + r) +
+      'V' + n3(y + h - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + n3(x + w - r) + ' ' + n3(y + h) +
+      'H' + n3(x + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + x + ' ' + n3(y + h - r) +
+      'V' + n3(y + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + n3(x + r) + ' ' + y + 'z';
+  }
+  function Pg() {
+    var a = arguments, s = '';
+    for (var i = 0; i < a.length; i += 2) s += (i ? 'L' : 'M') + n3(a[i]) + ' ' + n3(a[i + 1]);
+    return s + 'z';
+  }
+  function Ln(x1, y1, x2, y2, w) {
+    var dx = x2 - x1, dy = y2 - y1, l = Math.sqrt(dx * dx + dy * dy) || 1;
+    var nx = -dy / l * w / 2, ny = dx / l * w / 2;
+    return Pg(x1 + nx, y1 + ny, x2 + nx, y2 + ny, x2 - nx, y2 - ny, x1 - nx, y1 - ny);
+  }
+  function Pt(cx, cy, r, deg) { var t = deg * Math.PI / 180; return [cx + r * Math.cos(t), cy + r * Math.sin(t)]; }
+  function Sec(cx, cy, r, a0, a1) {
+    var p0 = Pt(cx, cy, r, a0), p1 = Pt(cx, cy, r, a1), large = ((a1 - a0) % 360 + 360) % 360 > 180 ? 1 : 0;
+    return 'M' + cx + ' ' + cy + 'L' + n3(p0[0]) + ' ' + n3(p0[1]) + 'A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + n3(p1[0]) + ' ' + n3(p1[1]) + 'z';
+  }
+  function Rep(n, fn, off) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += fn(i * 360 / n + (off || 0), i);
+    return s;
+  }
+  function Cres(R, r, d) {
+    var x = (d * d + R * R - r * r) / (2 * d), y = Math.sqrt(R * R - x * x), large = (x - d) > 0 ? 1 : 0;
+    return 'M' + n3(x) + ' ' + n3(-y) + 'A' + R + ' ' + R + ' 0 1 0 ' + n3(x) + ' ' + n3(y) +
+      'A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + n3(x) + ' ' + n3(-y) + 'z';
+  }
+  function defineMotif(name, cat, parts) {
+    MOTIFS.push({ name: name, cat: cat, draw: function (S) {
+      for (var i = 0; i < parts.length; i++) S(parts[i][0], null, parts[i][1], parts[i][2]);
+    } });
+  }
+
+  /* ---------- drawing ---------- */
+  var pathCache = {};
+  function getPath(d) { return pathCache[d] || (pathCache[d] = new Path2D(d)); }
+  function embossFill(g, paper, sunk, dpr, path, rule) {
+    var o = 1.6 * dpr, blur = 2.2 * dpr;
+    function f() { if (path) g.fill(path, rule || 'nonzero'); else g.fill(); }
+    g.fillStyle = paper;
+    g.shadowBlur = blur;
+    g.shadowColor = sunk ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.30)';
+    g.shadowOffsetX = o; g.shadowOffsetY = o;
+    f();
+    g.shadowColor = sunk ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.75)';
+    g.shadowOffsetX = -o; g.shadowOffsetY = -o;
+    f();
+    g.shadowColor = 'transparent';
+    g.shadowBlur = 0; g.shadowOffsetX = 0; g.shadowOffsetY = 0;
+    f();
+  }
+  function drawMotif(g, m, x, y, size, rot, pal, style, dpr) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.scale(size, size);
+    m.draw(function (role, build, d, rule) {
+      var path = null;
+      if (d) path = getPath(d); else { g.beginPath(); build(g); }
+      if (style === 'emboss') {
+        embossFill(g, pal.bg, role === 'cut', dpr, path, rule);
+      } else {
+        g.fillStyle = role === 'a' ? pal.a : (role === 'b' ? pal.b : pal.bg);
+        if (path) g.fill(path, rule || 'nonzero'); else g.fill();
+      }
+    });
+    g.restore();
+  }
+
+
+  /* ---------- motif library ---------- */
+  function RegP(n, r, off) {
+    var a = [];
+    for (var i = 0; i < n; i++) { var p = Pt(0, 0, r, (off === undefined ? -90 : off) + i * 360 / n); a.push(p[0], p[1]); }
+    return Pg.apply(null, a);
+  }
+  function StarP(n, ro, ri, off) {
+    var a = [];
+    for (var i = 0; i < n * 2; i++) { var p = Pt(0, 0, i % 2 ? ri : ro, (off === undefined ? -90 : off) + i * 180 / n); a.push(p[0], p[1]); }
+    return Pg.apply(null, a);
+  }
+  function Ar(x, y, w, h) {
+    var r = w / 2;
+    return 'M' + x + ' ' + (y + h) + 'V' + n3(y + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + n3(x + w) + ' ' + n3(y + r) + 'V' + n3(y + h) + 'z';
+  }
+  function Grid(x, y, w, h, nx, ny, gx, gy, skip) {
+    var s = '';
+    for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) {
+      if (skip && skip(i, j)) continue;
+      s += Rc(n3(x + i * (w + gx)), n3(y + j * (h + gy)), w, h);
+    }
+    return s;
+  }
+  /* Rotate (and move) an absolute-command path string (M L C Q Z) by deg degrees, then by tx, ty. */
+  function RP(spec, deg, tx, ty) {
+    var t = (deg || 0) * Math.PI / 180, c = Math.cos(t), s = Math.sin(t), out = '';
+    tx = tx || 0; ty = ty || 0;
+    spec.replace(/([MLCQZz])([^MLCQZz]*)/g, function (_, cmd, args) {
+      var nums = args.match(/-?\d*\.?\d+/g) || [], o = [];
+      for (var i = 0; i < nums.length; i += 2) {
+        var x = +nums[i], y = +nums[i + 1];
+        o.push(n3(x * c - y * s + tx) + ' ' + n3(x * s + y * c + ty));
+      }
+      out += cmd + o.join(' ');
+      return '';
+    });
+    return out;
+  }
+
+  defineMotif('Triangle', 'shapes', [['a', Pg(0, -.85, .92, .68, -.92, .68)], ['b', Pg(0, -.18, .44, .46, -.44, .46)]]);
+  defineMotif('Octagon', 'shapes', [['a', RegP(8, .92, 22.5)], ['b', RegP(8, .5, 22.5)]]);
+  defineMotif('Crescent', 'shapes', [['a', Cres(.9, .72, .4)]]);
+  defineMotif('Drop', 'shapes', [
+    ['a', 'M0 -.9C.35 -.4 .65 -.05 .65 .3A.65 .65 0 0 1 -.65 .3C-.65 -.05 -.35 -.4 0 -.9z'],
+    ['b', ElR(-.27, .3, .1, .22, 20)]
+  ]);
+  defineMotif('Rainbow', 'shapes', [
+    ['a', 'M-.9 .5A.9 .9 0 0 1 .9 .5H.65A.65 .65 0 0 0 -.65 .5z'],
+    ['a', 'M-.5 .5A.5 .5 0 0 1 .5 .5H.25A.25 .25 0 0 0 -.25 .5z']
+  ]);
+  defineMotif('Zigzag', 'shapes', [['a', Pg(-.9, .15, -.45, -.4, 0, .15, .45, -.4, .9, .15, .9, .45, .45, -.1, 0, .45, -.45, -.1, -.9, .45)]]);
+  defineMotif('Cross', 'shapes', [['a', Ln(-.7, -.7, .7, .7, .34) + Ln(.7, -.7, -.7, .7, .34)], ['b', Cc(0, 0, .13)]]);
+  defineMotif('Bow', 'shapes', [
+    ['a', Pg(0, 0, -.92, -.6, -.92, .6) + Pg(0, 0, .92, -.6, .92, .6)],
+    ['a', Cc(0, 0, .24)],
+    ['b', Cc(0, 0, .1)]
+  ]);
+
+  defineMotif('Dog', 'animals', [
+    ['a', ElR(-.62, -.1, .22, .5, 15) + ElR(.62, -.1, .22, .5, -15)],
+    ['a', El(0, .08, .56, .64)],
+    ['b', El(0, .32, .27, .22)],
+    ['cut', El(0, .24, .1, .07)],
+    ['cut', Cc(-.22, -.06, .08) + Cc(.22, -.06, .08)]
+  ]);
+  defineMotif('Rabbit', 'animals', [
+    ['a', El(-.3, -.5, .17, .42) + El(.3, -.5, .17, .42)],
+    ['b', El(-.3, -.5, .07, .3) + El(.3, -.5, .07, .3)],
+    ['a', El(0, .3, .5, .48)],
+    ['cut', Cc(-.2, .22, .07) + Cc(.2, .22, .07)],
+    ['b', Pg(-.08, .4, .08, .4, 0, .5)]
+  ]);
+  defineMotif('Mouse', 'animals', [
+    ['a', Cc(-.55, -.45, .3) + Cc(.55, -.45, .3)],
+    ['b', Cc(-.55, -.45, .17) + Cc(.55, -.45, .17)],
+    ['a', 'M0 .88C-.2 .88 -.62 .45 -.62 0A.62 .62 0 0 1 .62 0C.62 .45 .2 .88 0 .88z'],
+    ['cut', Cc(-.24, -.02, .07) + Cc(.24, -.02, .07)],
+    ['b', Cc(0, .7, .1)]
+  ]);
+  defineMotif('Bear', 'animals', [
+    ['a', Cc(-.52, -.5, .25) + Cc(.52, -.5, .25)],
+    ['b', Cc(-.52, -.5, .12) + Cc(.52, -.5, .12)],
+    ['a', Cc(0, .1, .68)],
+    ['b', El(0, .3, .28, .22)],
+    ['cut', El(0, .22, .09, .06)],
+    ['cut', Cc(-.26, -.02, .08) + Cc(.26, -.02, .08)]
+  ]);
+  defineMotif('Pig', 'animals', [
+    ['a', Pg(-.64, -.3, -.3, -.78, -.1, -.4) + Pg(.64, -.3, .3, -.78, .1, -.4)],
+    ['a', Cc(0, .08, .68)],
+    ['b', El(0, .24, .32, .25)],
+    ['cut', Cc(-.12, .24, .06) + Cc(.12, .24, .06)],
+    ['cut', Cc(-.3, -.12, .08) + Cc(.3, -.12, .08)]
+  ]);
+  defineMotif('Frog', 'animals', [
+    ['a', Cc(-.4, -.45, .3) + Cc(.4, -.45, .3)],
+    ['a', El(0, .2, .86, .6)],
+    ['b', Cc(-.4, -.45, .17) + Cc(.4, -.45, .17)],
+    ['cut', Cc(-.4, -.45, .07) + Cc(.4, -.45, .07)],
+    ['cut', 'M-.55 .22Q0 .72 .55 .22Q0 .56 -.55 .22z']
+  ]);
+  defineMotif('Owl', 'animals', [
+    ['a', Pg(-.68, -.45, -.55, -.92, -.22, -.62) + Pg(.68, -.45, .55, -.92, .22, -.62)],
+    ['a', Rr(-.7, -.7, 1.4, 1.6, .6)],
+    ['b', Cc(-.28, -.2, .27) + Cc(.28, -.2, .27)],
+    ['cut', Cc(-.28, -.2, .11) + Cc(.28, -.2, .11)],
+    ['b', Pg(-.1, .05, .1, .05, 0, .24)],
+    ['b', El(0, .62, .3, .14)]
+  ]);
+  defineMotif('Duck', 'animals', [
+    ['a', Pg(.66, .15, .96, -.12, .84, .42)],
+    ['a', El(.05, .35, .8, .46)],
+    ['a', Cc(-.4, -.28, .34)],
+    ['a', Pg(-.68, -.32, -.99, -.2, -.68, -.06)],
+    ['cut', Cc(-.46, -.38, .06)],
+    ['b', El(.12, .32, .38, .2)]
+  ]);
+  defineMotif('Penguin', 'animals', [
+    ['a', ElR(-.66, .15, .1, .3, 15) + ElR(.66, .15, .1, .3, -15)],
+    ['a', El(0, -.02, .62, .82)],
+    ['a', El(-.26, .82, .2, .09) + El(.26, .82, .2, .09)],
+    ['b', El(0, .2, .4, .56)],
+    ['cut', Cc(-.2, -.5, .07) + Cc(.2, -.5, .07)],
+    ['cut', Pg(-.1, -.3, .1, -.3, 0, -.14)]
+  ]);
+  defineMotif('Turtle', 'animals', [
+    ['a', 'M-.64 .3A.64 .64 0 0 1 .64 .3z'],
+    ['a', Cc(.84, .02, .19)],
+    ['a', Rr(-.52, .3, .22, .28, .08) + Rr(.3, .3, .22, .28, .08)],
+    ['a', Pg(-.62, .22, -.92, .36, -.62, .36)],
+    ['b', Cc(0, -.12, .2) + Cc(-.4, .08, .13) + Cc(.4, .08, .13)],
+    ['cut', Cc(.9, -.02, .04)]
+  ]);
+  defineMotif('Snail', 'animals', [
+    ['a', Rr(-.9, .36, 1.75, .3, .15)],
+    ['a', Ln(-.72, .5, -.75, -.12, .26)],
+    ['a', Cc(-.75, -.15, .17)],
+    ['a', Ln(-.8, -.26, -.9, -.58, .06) + Ln(-.7, -.26, -.62, -.58, .06)],
+    ['a', Cc(.15, -.12, .56)],
+    ['b', Cc(.15, -.12, .4)],
+    ['a', Cc(.15, -.12, .26)],
+    ['b', Cc(.15, -.12, .12)]
+  ]);
+  defineMotif('Butterfly', 'animals', [
+    ['a', ElR(-.42, -.32, .46, .34, 35) + ElR(.42, -.32, .46, .34, -35)],
+    ['a', ElR(-.34, .4, .34, .26, -30) + ElR(.34, .4, .34, .26, 30)],
+    ['cut', Cc(-.52, -.36, .11) + Cc(.52, -.36, .11)],
+    ['b', Cc(-.38, .42, .09) + Cc(.38, .42, .09)],
+    ['a', Rr(-.1, -.5, .2, 1.05, .1)],
+    ['a', Ln(-.04, -.46, -.26, -.86, .05) + Ln(.04, -.46, .26, -.86, .05)]
+  ]);
+  defineMotif('Bee', 'animals', [
+    ['a', ElR(-.2, -.6, .18, .36, -25) + ElR(.2, -.6, .18, .36, 25)],
+    ['a', El(0, .1, .66, .54)],
+    ['a', Pg(.64, .1, .92, .1, .64, .2)],
+    ['b', Rc(-.28, -.34, .14, .88) + Rc(.04, -.4, .14, .98)],
+    ['cut', Cc(-.46, 0, .07)]
+  ]);
+  defineMotif('Ladybug', 'animals', [
+    ['a', 'M-.32 -.58A.32 .32 0 0 1 .32 -.58z'],
+    ['a', Cc(0, .1, .7)],
+    ['b', Cc(-.3, -.1, .12) + Cc(.3, -.1, .12) + Cc(-.32, .35, .1) + Cc(.32, .35, .1)],
+    ['cut', Rc(-.025, -.52, .05, 1.3)]
+  ]);
+  defineMotif('Whale', 'animals', [
+    ['a', 'M-.9 .1C-.9 -.4 -.45 -.62 0 -.6C.4 -.58 .6 -.3 .72 -.05L.92 -.38L.92 .3L.68 .1C.55 .45 .25 .62 -.1 .62C-.55 .62 -.9 .45 -.9 .1z'],
+    ['b', El(-.1, .36, .5, .14)],
+    ['cut', Cc(-.55, -.02, .06)]
+  ]);
+  defineMotif('Octopus', 'animals', [
+    ['a', Cc(0, -.3, .56)],
+    ['a', Ln(-.4, .1, -.62, .72, .2) + Ln(-.15, .15, -.2, .82, .2) + Ln(.15, .15, .2, .82, .2) + Ln(.4, .1, .62, .72, .2)],
+    ['cut', Cc(-.2, -.32, .1) + Cc(.2, -.32, .1)],
+    ['b', Cc(0, -.62, .08)]
+  ]);
+  defineMotif('Elephant', 'animals', [
+    ['a', Cc(-.62, -.12, .32) + Cc(.62, -.12, .32)],
+    ['b', Cc(-.62, -.12, .2) + Cc(.62, -.12, .2)],
+    ['a', Cc(0, -.05, .5)],
+    ['a', Rr(-.14, .1, .28, .55, .1)],
+    ['a', Rr(-.14, .5, .46, .28, .14)],
+    ['cut', Cc(-.2, -.18, .07) + Cc(.2, -.18, .07)]
+  ]);
+
+  defineMotif('Church', 'buildings', [
+    ['a', Rc(-.55, -.05, 1.1, .9)],
+    ['a', Rc(-.2, -.55, .4, .52)],
+    ['a', Pg(-.27, -.55, .27, -.55, 0, -.9)],
+    ['cut', Ar(-.14, .45, .28, .4)],
+    ['cut', Ar(-.07, -.4, .14, .22)],
+    ['cut', Ar(-.46, .15, .14, .24) + Ar(.32, .15, .14, .24)]
+  ]);
+  defineMotif('Windmill', 'buildings', [
+    ['a', Pg(-.32, .88, .32, .88, .2, -.1, -.2, -.1)],
+    ['a', 'M-.24 -.1A.24 .24 0 0 1 .24 -.1z'],
+    ['a', Ln(0, -.28, -.72, -.88, .15) + Ln(0, -.28, .72, -.88, .15) + Ln(0, -.28, -.72, .32, .15) + Ln(0, -.28, .72, .32, .15)],
+    ['b', Cc(0, -.28, .1)],
+    ['cut', Ar(-.1, .58, .2, .3)]
+  ]);
+  defineMotif('Barn', 'buildings', [
+    ['a', Pg(-.82, .86, -.82, -.12, 0, -.8, .82, -.12, .82, .86)],
+    ['cut', Rc(-.3, .2, .6, .66)],
+    ['a', Ln(-.3, .2, .3, .86, .08) + Ln(.3, .2, -.3, .86, .08)],
+    ['cut', Rc(-.15, -.4, .3, .22)]
+  ]);
+  defineMotif('Lighthouse', 'buildings', [
+    ['a', Pg(-.32, .88, .32, .88, .2, -.35, -.2, -.35)],
+    ['b', Pg(-.251, .28, .251, .28, .271, .52, -.271, .52)],
+    ['b', Pg(-.219, -.12, .219, -.12, .237, .1, -.237, .1)],
+    ['a', Rc(-.22, -.62, .44, .27)],
+    ['cut', Rc(-.13, -.55, .26, .14)],
+    ['a', Pg(-.3, -.62, .3, -.62, 0, -.88)],
+    ['a', Pg(.3, -.52, .92, -.72, .92, -.32) + Pg(-.3, -.52, -.92, -.32, -.92, -.72)]
+  ]);
+  defineMotif('Tent', 'buildings', [
+    ['a', Pg(0, -.8, .92, .8, -.92, .8)],
+    ['cut', Pg(0, -.1, .3, .8, -.3, .8)]
+  ]);
+  defineMotif('Pagoda', 'buildings', [
+    ['a', Rc(-.02, -1, .04, .24)],
+    ['a', Pg(-.3, -.78, .3, -.78, .5, -.58, -.5, -.58)],
+    ['a', Rc(-.26, -.58, .52, .22)],
+    ['a', Pg(-.45, -.36, .45, -.36, .7, -.12, -.7, -.12)],
+    ['a', Rc(-.36, -.12, .72, .26)],
+    ['a', Pg(-.6, .15, .6, .15, .92, .42, -.92, .42)],
+    ['a', Rc(-.46, .42, .92, .44)],
+    ['cut', Rc(-.1, -.52, .2, .12) + Rc(-.2, -.06, .4, .12) + Ar(-.13, .54, .26, .32)]
+  ]);
+  defineMotif('Mosque', 'buildings', [
+    ['a', Rc(-.02, -.92, .04, .3)],
+    ['a', 'M-.5 -.1A.5 .5 0 0 1 .5 -.1z'],
+    ['a', Rc(-.58, -.1, 1.16, .95)],
+    ['a', Rc(-.92, -.4, .22, 1.25) + Rc(.7, -.4, .22, 1.25)],
+    ['a', Pg(-.92, -.4, -.7, -.4, -.81, -.78) + Pg(.7, -.4, .92, -.4, .81, -.78)],
+    ['cut', Ar(-.4, .1, .24, .45) + Ar(.16, .1, .24, .45)],
+    ['cut', Ar(-.14, .42, .28, .43)]
+  ]);
+  defineMotif('Factory', 'buildings', [
+    ['a', Rc(-.85, -.05, 1.4, .9)],
+    ['a', Pg(-.85, -.05, -.85, -.4, -.4, -.05, -.4, -.4, .05, -.05, .05, -.4, .5, -.05)],
+    ['a', Rc(.62, -.78, .24, .83)],
+    ['a', Cc(.7, -.88, .09) + Cc(.84, -.96, .06)],
+    ['cut', Rc(-.7, .15, .25, .22) + Rc(-.3, .15, .25, .22) + Rc(.1, .15, .25, .22)],
+    ['cut', Rc(-.7, .55, .5, .3)]
+  ]);
+  defineMotif('Shop', 'buildings', [
+    ['a', Rc(-.6, -.7, 1.2, .3)],
+    ['b', Rc(-.48, -.62, .96, .14)],
+    ['a', Pg(-.85, -.3, .85, -.3, .95, .0, -.95, .0)],
+    ['b', Rc(-.6, -.3, .22, .3) + Rc(-.16, -.3, .22, .3) + Rc(.28, -.3, .22, .3)],
+    ['a', Rc(-.8, 0, 1.6, .86)],
+    ['cut', Rc(-.65, .18, .7, .44)],
+    ['cut', Rc(.22, .22, .4, .64)]
+  ]);
+  defineMotif('Hospital', 'buildings', [
+    ['a', Rc(-.72, -.45, 1.44, 1.3)],
+    ['cut', Rc(-.1, -.3, .2, .6) + Rc(-.3, -.1, .6, .2)],
+    ['cut', Rc(-.58, .35, .2, .2) + Rc(.38, .35, .2, .2)],
+    ['cut', Ar(-.15, .45, .3, .4)]
+  ]);
+  defineMotif('Pyramid', 'buildings', [
+    ['a', Pg(0, -.8, .95, .7, -.95, .7)],
+    ['cut', Ln(-.33, -.2, .33, -.2, .05) + Ln(-.52, .1, .52, .1, .05) + Ln(-.7, .4, .7, .4, .05)],
+    ['a', Cc(.62, -.66, .14)]
+  ]);
+  defineMotif('Bridge', 'buildings', [
+    ['a', Rc(-.5, -.62, .12, 1.4) + Rc(.38, -.62, .12, 1.4)],
+    ['a', 'M-.95 .14Q-.72 .14 -.44 -.56Q0 .2 .44 -.56Q.72 .14 .95 .14V.2Q.72 .2 .44 -.46Q0 .3 -.44 -.46Q-.72 .2 -.95 .2z'],
+    ['a', Rc(-.95, .2, 1.9, .12)]
+  ]);
+  defineMotif('Cabin', 'buildings', [
+    ['a', Rc(.4, -.7, .16, .45)],
+    ['a', Rc(-.7, -.05, 1.4, .86)],
+    ['a', Pg(-.92, -.02, 0, -.72, .92, -.02)],
+    ['cut', Ln(-.66, .17, .66, .17, .04) + Ln(-.66, .6, .66, .6, .04)],
+    ['cut', Rc(-.52, .3, .3, .5)],
+    ['cut', Rc(.22, .3, .3, .25)]
+  ]);
+  defineMotif('Apartments', 'buildings', [
+    ['a', Rc(-.62, -.85, 1.24, 1.72)],
+    ['a', Rc(-.72, -.92, 1.44, .1)],
+    ['cut', Grid(-.46, -.66, .22, .17, 3, 4, .1, .13, function (i, j) { return (i + j) % 3 === 0; })],
+    ['b', Grid(-.46, -.66, .22, .17, 3, 4, .1, .13, function (i, j) { return (i + j) % 3 !== 0; })],
+    ['cut', Ar(-.14, .5, .28, .37)]
+  ]);
+  defineMotif('Skyline', 'buildings', [
+    ['a', Rc(-.92, -.1, .5, .96)],
+    ['a', Rc(-.34, -.82, .56, 1.68)],
+    ['a', Rc(.3, -.42, .62, 1.28)],
+    ['cut', Grid(-.8, .05, .12, .12, 2, 4, .1, .1)],
+    ['cut', Grid(-.22, -.68, .12, .12, 3, 6, .08, .1)],
+    ['cut', Grid(.42, -.28, .12, .12, 3, 5, .08, .1)]
+  ]);
+  defineMotif('Igloo', 'buildings', [
+    ['a', 'M-.85 .5A.75 .75 0 0 1 .65 .5z'],
+    ['a', 'M.45 .5V.28A.24 .24 0 0 1 .93 .28V.5z'],
+    ['cut', Ar(.56, .3, .26, .2)],
+    ['cut', Ln(-.6, .15, .5, .15, .05) + Ln(-.72, .33, .62, .33, .05) + Ln(-.4, .15, -.4, .33, .05) + Ln(0, .15, 0, .33, .05) + Ln(.4, .15, .4, .33, .05) + Ln(-.2, -.1, -.2, .15, .05) + Ln(.2, -.1, .2, .15, .05)]
+  ]);
+  defineMotif('Greenhouse', 'buildings', [
+    ['a', Pg(-.82, .82, -.82, -.1, -.4, -.62, .4, -.62, .82, -.1, .82, .82)],
+    ['cut', Ln(-.4, -.56, -.4, .8, .05) + Ln(0, -.56, 0, .8, .05) + Ln(.4, -.56, .4, .8, .05) + Ln(-.78, -.1, .78, -.1, .05)],
+    ['b', Cc(-.4, .6, .14) + Cc(0, .56, .17) + Cc(.4, .6, .14)]
+  ]);
+
+  defineMotif('Taxi', 'cars', [
+    ['a', Rr(-.92, -.05, 1.84, .5, .14)],
+    ['a', Pg(-.55, -.05, -.34, -.5, .3, -.5, .58, -.05)],
+    ['a', Rc(-.08, -.66, .3, .16)],
+    ['cut', Pg(-.44, -.09, -.28, -.42, -.02, -.42, -.02, -.09) + Pg(.08, -.09, .08, -.42, .26, -.42, .46, -.09)],
+    ['b', Rc(-.84, .12, 1.68, .07)],
+    ['a', Cc(-.52, .45, .25) + Cc(.52, .45, .25)],
+    ['b', Cc(-.52, .45, .1) + Cc(.52, .45, .1)]
+  ]);
+  defineMotif('Van', 'cars', [
+    ['a', Pg(-.9, -.5, .3, -.5, .92, .05, .92, .42, -.9, .42)],
+    ['cut', Pg(.2, -.4, .32, -.4, .72, .0, .2, .0)],
+    ['cut', Ln(-.15, -.45, -.15, .36, .05)],
+    ['b', Rc(-.84, .12, 1.7, .07)],
+    ['a', Cc(-.52, .45, .25) + Cc(.52, .45, .25)],
+    ['b', Cc(-.52, .45, .1) + Cc(.52, .45, .1)]
+  ]);
+  defineMotif('Pickup', 'cars', [
+    ['a', Pg(-.92, -.05, -.12, -.05, -.12, -.5, .38, -.5, .62, -.12, .92, -.05, .92, .42, -.92, .42)],
+    ['cut', Pg(-.04, -.42, .3, -.42, .5, -.12, -.04, -.12)],
+    ['cut', Ln(-.84, .12, -.2, .12, .05)],
+    ['a', Cc(-.55, .45, .25) + Cc(.55, .45, .25)],
+    ['b', Cc(-.55, .45, .1) + Cc(.55, .45, .1)]
+  ]);
+  defineMotif('Sports car', 'cars', [
+    ['a', Pg(-.95, .42, -.95, .05, -.3, -.05, -.05, -.4, .35, -.4, .6, -.05, .95, .05, .95, .42)],
+    ['a', Rc(-.95, -.2, .4, .07) + Rc(-.95, -.2, .1, .22)],
+    ['cut', Pg(.02, -.32, .3, -.32, .48, -.08, .02, -.08)],
+    ['b', Rc(-.88, .15, 1.76, .07)],
+    ['a', Cc(-.5, .42, .24) + Cc(.5, .42, .24)],
+    ['b', Cc(-.5, .42, .1) + Cc(.5, .42, .1)]
+  ]);
+  defineMotif('Jeep', 'cars', [
+    ['a', Rr(-.92, -.1, 1.84, .55, .1)],
+    ['a', Pg(.18, -.1, .28, -.52, .4, -.52, .5, -.1)],
+    ['a', Ln(-.45, -.1, -.45, -.5, .07) + Ln(-.45, -.5, .2, -.5, .07)],
+    ['cut', Cc(.8, .08, .07)],
+    ['a', Cc(-.5, .42, .27) + Cc(.5, .42, .27)],
+    ['b', Cc(-.5, .42, .11) + Cc(.5, .42, .11)]
+  ]);
+  defineMotif('Tractor', 'cars', [
+    ['a', Rr(0, -.05, .85, .38, .08)],
+    ['a', Pg(-.7, -.1, -.62, -.65, 0, -.65, .05, -.1)],
+    ['cut', Pg(-.58, -.55, -.08, -.55, -.04, -.2, -.62, -.2)],
+    ['a', Rc(.7, -.5, .07, .46)],
+    ['a', Cc(-.45, .35, .42) + Cc(.62, .55, .25)],
+    ['b', Cc(-.45, .35, .17) + Cc(.62, .55, .1)]
+  ]);
+  defineMotif('Bicycle', 'cars', [
+    ['a', Cc(-.55, .3, .38) + Cc(-.55, .3, .3) + Cc(.55, .3, .38) + Cc(.55, .3, .3), 'evenodd'],
+    ['a', Ln(-.55, .3, -.05, .3, .07) + Ln(-.05, .3, -.25, -.18, .07) + Ln(-.25, -.18, .35, -.15, .07) + Ln(-.05, .3, .35, -.15, .07) + Ln(.35, -.15, .55, .3, .07) + Ln(.35, -.15, .3, -.38, .07) + Ln(.3, -.38, .5, -.4, .07)],
+    ['a', Rc(-.38, -.28, .26, .07)]
+  ]);
+  defineMotif('Motorbike', 'cars', [
+    ['a', Cc(-.55, .3, .32) + Cc(.55, .3, .32)],
+    ['cut', Cc(-.55, .3, .18) + Cc(.55, .3, .18)],
+    ['a', Pg(-.45, -.2, .25, -.2, .2, .15, -.2, .2)],
+    ['a', Ln(-.55, .3, -.15, .1, .12) + Ln(.55, .3, .36, -.25, .1) + Ln(.3, -.3, .52, -.36, .08)],
+    ['b', Rc(-.1, .12, .3, .2)]
+  ]);
+  defineMotif('Train', 'cars', [
+    ['a', Rc(-.9, -.62, .66, .1)],
+    ['a', Rc(-.85, -.52, .55, .85)],
+    ['cut', Rc(-.75, -.4, .35, .3)],
+    ['a', Rr(-.3, -.25, 1.1, .56, .1)],
+    ['a', Pg(.45, -.62, .75, -.62, .68, -.25, .52, -.25)],
+    ['a', Pg(.78, .3, .95, .45, .78, .45)],
+    ['a', Cc(-.55, .46, .26) + Cc(0, .5, .2) + Cc(.5, .5, .2)],
+    ['b', Cc(-.55, .46, .1) + Cc(0, .5, .08) + Cc(.5, .5, .08)]
+  ]);
+  defineMotif('Tram', 'cars', [
+    ['a', Rc(-.9, -.86, 1.8, .04)],
+    ['a', Ln(0, -.84, .12, -.5, .05) + Ln(.12, -.5, -.12, -.5, .05)],
+    ['a', Rr(-.9, -.45, 1.8, .86, .15)],
+    ['cut', Grid(-.76, -.32, .27, .32, 4, 1, .1, 0)],
+    ['b', Rc(-.9, .1, 1.8, .1)],
+    ['a', Cc(-.55, .44, .15) + Cc(.55, .44, .15)]
+  ]);
+  defineMotif('Plane', 'cars', [
+    ['a', El(0, -.02, .13, .9)],
+    ['a', Pg(0, -.25, .92, .25, .92, .42, 0, .12, -.92, .42, -.92, .25)],
+    ['a', Pg(0, .62, .4, .85, .4, .96, 0, .82, -.4, .96, -.4, .85)],
+    ['cut', El(0, -.62, .05, .1)]
+  ]);
+  defineMotif('Helicopter', 'cars', [
+    ['a', Rc(-.88, -.45, 1.5, .07) + Rc(-.12, -.4, .05, .2)],
+    ['a', El(-.15, .1, .52, .38)],
+    ['a', Pg(.3, .0, .8, -.12, .8, .1, .3, .2)],
+    ['a', Cc(.85, -.02, .12)],
+    ['cut', ElR(-.3, .05, .22, .2, 0)],
+    ['a', Rc(-.6, .58, .95, .06) + Ln(-.35, .45, -.4, .6, .05) + Ln(.1, .45, .15, .6, .05)]
+  ]);
+  defineMotif('Rocket', 'cars', [
+    ['a', 'M0 -.95C.4 -.6 .4 .1 .3 .5L-.3 .5C-.4 .1 -.4 -.6 0 -.95z'],
+    ['a', Pg(.3, .1, .64, .62, .3, .5) + Pg(-.3, .1, -.3, .5, -.64, .62)],
+    ['cut', Cc(0, -.2, .16)],
+    ['b', Cc(0, -.2, .08)],
+    ['a', Pg(-.2, .6, .2, .6, 0, .95)]
+  ]);
+  defineMotif('Sailboat', 'cars', [
+    ['a', Pg(-.88, .35, .88, .35, .56, .72, -.56, .72)],
+    ['b', Rc(-.7, .43, 1.4, .07)],
+    ['a', Rc(-.03, -.88, .06, 1.2)],
+    ['a', Pg(.08, -.82, .72, .25, .08, .25)],
+    ['a', Pg(-.08, -.62, -.08, .25, -.62, .25)]
+  ]);
+  defineMotif('Ship', 'cars', [
+    ['a', Pg(-.95, .1, .95, .1, .7, .64, -.7, .64)],
+    ['a', Rc(-.45, -.3, .8, .4)],
+    ['a', Rc(-.25, -.58, .4, .28)],
+    ['a', Rc(0, -.86, .16, .3)],
+    ['b', Rc(0, -.78, .16, .08)],
+    ['cut', Grid(-.34, -.18, .14, .14, 4, 1, .08, 0)],
+    ['cut', Cc(-.6, .3, .06) + Cc(-.35, .3, .06) + Cc(-.1, .3, .06) + Cc(.15, .3, .06) + Cc(.4, .3, .06)]
+  ]);
+  defineMotif('Fire truck', 'cars', [
+    ['a', Rc(-.92, -.2, 1.25, .62)],
+    ['a', Pg(.38, -.35, .64, -.35, .92, .05, .92, .42, .38, .42)],
+    ['a', Ln(-.85, -.3, .25, -.3, .05) + Ln(-.85, -.44, .25, -.44, .05) + Ln(-.6, -.3, -.6, -.44, .04) + Ln(-.3, -.3, -.3, -.44, .04) + Ln(0, -.3, 0, -.44, .04)],
+    ['cut', Pg(.46, -.28, .6, -.28, .8, 0, .46, 0)],
+    ['b', Rc(-.88, .08, 1.18, .08)],
+    ['a', Cc(-.55, .45, .25) + Cc(.55, .45, .25)],
+    ['b', Cc(-.55, .45, .1) + Cc(.55, .45, .1)]
+  ]);
+  defineMotif('Ambulance', 'cars', [
+    ['a', Pg(-.92, -.5, .3, -.5, .6, -.08, .92, -.05, .92, .42, -.92, .42)],
+    ['a', Rc(-.1, -.64, .3, .14)],
+    ['cut', Rc(-.55, -.3, .12, .4) + Rc(-.69, -.16, .4, .12)],
+    ['cut', Pg(.38, -.4, .5, -.4, .74, -.12, .38, -.12)],
+    ['a', Cc(-.55, .45, .25) + Cc(.55, .45, .25)],
+    ['b', Cc(-.55, .45, .1) + Cc(.55, .45, .1)]
+  ]);
+
+  defineMotif('Blossom', 'flowers', [
+    ['a', Rep(5, function (d) { return RP('M0 0C.2 -.45 .75 -.5 .92 -.22L.78 0L.92 .22C.75 .5 .2 .45 0 0z', d); }, -90)],
+    ['b', Cc(0, 0, .18)]
+  ]);
+  defineMotif('Lotus', 'flowers', [
+    ['a', El(0, .66, .84, .12)],
+    ['a', RP('M0 0C-.22 -.25 -.24 -.65 0 -.95C.24 -.65 .22 -.25 0 0z', -70, 0, .52) + RP('M0 0C-.22 -.25 -.24 -.65 0 -.95C.24 -.65 .22 -.25 0 0z', 70, 0, .52)],
+    ['a', RP('M0 0C-.22 -.25 -.24 -.65 0 -.95C.24 -.65 .22 -.25 0 0z', -35, 0, .52) + RP('M0 0C-.22 -.25 -.24 -.65 0 -.95C.24 -.65 .22 -.25 0 0z', 35, 0, .52)],
+    ['a', RP('M0 0C-.22 -.25 -.24 -.65 0 -.95C.24 -.65 .22 -.25 0 0z', 0, 0, .52)],
+    ['b', RP('M0 0C-.1 -.15 -.12 -.4 0 -.55C.12 -.4 .1 -.15 0 0z', 0, 0, .4)]
+  ]);
+  defineMotif('Lily', 'flowers', [
+    ['a', Rep(6, function (d) { return RP('M0 0C.15 -.14 .55 -.12 .94 0C.55 .12 .15 .14 0 0z', d); }, -90)],
+    ['b', Cc(0, 0, .13)],
+    ['cut', Rep(6, function (d) { var p = Pt(0, 0, .5, d); return Cc(p[0], p[1], .03); }, -60)]
+  ]);
+  defineMotif('Poppy', 'flowers', [
+    ['a', Cc(-.3, -.3, .46) + Cc(.3, -.3, .46) + Cc(-.3, .3, .46) + Cc(.3, .3, .46)],
+    ['b', Cc(0, 0, .2)],
+    ['cut', Rep(8, function (d) { var p = Pt(0, 0, .32, d); return Cc(p[0], p[1], .035); })]
+  ]);
+  defineMotif('Rose', 'flowers', [
+    ['a', Cc(0, 0, .62) + Rep(8, function (d) { var q = Pt(0, 0, .62, d); return Cc(q[0], q[1], .27); })],
+    ['cut', Cc(0, 0, .44) + Cc(0, 0, .38) + Cc(0, 0, .22) + Cc(0, 0, .16), 'evenodd']
+  ]);
+  defineMotif('Lavender', 'flowers', [
+    ['a', Rc(-.03, -.2, .06, 1.1)],
+    ['a', (function () { var s = El(0, -.9, .07, .12); for (var i = 0; i < 5; i++) s += ElR(-.14, -.72 + i * .16, .15, .075, -25) + ElR(.14, -.64 + i * .16, .15, .075, 25); return s; })()],
+    ['a', Ln(0, .9, -.32, .5, .06) + Ln(0, .9, .32, .5, .06)]
+  ]);
+  defineMotif('Bluebell', 'flowers', [
+    ['a', Rc(-.03, -.85, .06, 1.75)],
+    ['a', Ln(0, -.62, .24, -.58, .05) + Ln(0, -.28, -.24, -.24, .05) + Ln(0, .06, .24, .1, .05) + Ln(0, .4, -.24, .44, .05)],
+    ['a', ['M0 0C-.14 .04 -.16 .2 -.22 .34L.22 .34C.16 .2 .14 .04 0 0z'].map(function (b) { return RP(b, 0, .24, -.6) + RP(b, 0, -.24, -.26) + RP(b, 0, .24, .08) + RP(b, 0, -.24, .42); })[0]]
+  ]);
+  defineMotif('Hibiscus', 'flowers', [
+    ['a', Rep(5, function (d) { return RP('M0 0C.3 -.6 .95 -.55 .9 -.05C.88 .35 .35 .45 0 0z', d); }, -100)],
+    ['cut', Cc(0, 0, .12)],
+    ['cut', Ln(0, 0, .5, -.5, .05)],
+    ['b', Cc(.5, -.5, .08)]
+  ]);
+  defineMotif('Pansy', 'flowers', [
+    ['a', Cc(-.32, -.36, .38) + Cc(.32, -.36, .38) + Cc(-.5, .12, .32) + Cc(.5, .12, .32) + Cc(0, .46, .4)],
+    ['b', Cc(0, .05, .17)],
+    ['cut', Ln(0, .05, 0, .5, .04) + Ln(0, .05, -.38, .2, .04) + Ln(0, .05, .38, .2, .04)]
+  ]);
+  defineMotif('Dandelion', 'flowers', [
+    ['a', Rep(16, function (d) { var p = Pt(0, 0, .14, d), q = Pt(0, 0, .7, d); return Ln(p[0], p[1], q[0], q[1], .05); })],
+    ['a', Cc(0, 0, .16)],
+    ['a', Rep(16, function (d) { var q = Pt(0, 0, .8, d); return Cc(q[0], q[1], .09); })]
+  ]);
+  defineMotif('Cactus', 'flowers', [
+    ['a', Rr(-.2, -.85, .4, 1.75, .2)],
+    ['a', Rr(-.64, -.3, .46, .2, .1) + Rr(-.64, -.64, .2, .46, .1)],
+    ['a', Rr(.18, -.05, .46, .2, .1) + Rr(.44, -.42, .2, .46, .1)],
+    ['cut', Ln(0, -.7, 0, .78, .04) + Ln(-.1, -.6, -.1, .7, .03) + Ln(.1, -.6, .1, .7, .03)]
+  ]);
+  defineMotif('Pine', 'flowers', [
+    ['a', Rc(-.1, .6, .2, .32)],
+    ['a', Pg(0, -.92, .42, -.3, -.42, -.3)],
+    ['a', Pg(0, -.55, .6, .2, -.6, .2)],
+    ['a', Pg(0, -.15, .78, .65, -.78, .65)],
+    ['b', Cc(-.26, .4, .07) + Cc(.24, .45, .07) + Cc(0, .05, .07)]
+  ]);
+  defineMotif('Oak', 'flowers', [
+    ['a', Rc(-.09, .1, .18, .82)],
+    ['a', Cc(0, -.4, .5) + Cc(-.45, -.12, .38) + Cc(.45, -.12, .38) + Cc(-.2, .02, .36) + Cc(.22, .02, .36)],
+    ['b', Cc(-.22, -.4, .07) + Cc(.25, -.2, .07) + Cc(-.4, -.05, .07) + Cc(.05, -.62, .07)]
+  ]);
+  defineMotif('Palm', 'flowers', [
+    ['a', 'M-.1 .92C-.1 .3 .05 -.2 0 -.45L.16 -.45C.26 -.2 .1 .3 .14 .92z'],
+    ['a', [190, 225, 265, 310, 350].map(function (d) { return RP('M0 0C.25 -.3 .6 -.3 .9 0C.6 -.12 .25 -.1 0 0z', d, .08, -.45); }).join('')],
+    ['a', Cc(.02, -.38, .07) + Cc(.16, -.36, .07)]
+  ]);
+  defineMotif('Mushroom', 'flowers', [
+    ['a', Rr(-.25, .0, .5, .88, .14)],
+    ['a', 'M-.88 .12A.88 .78 0 0 1 .88 .12z'],
+    ['b', Cc(-.42, -.14, .12) + Cc(.15, -.36, .1) + Cc(.52, -.04, .09)]
+  ]);
+  defineMotif('Sprout', 'flowers', [
+    ['a', 'M-.62 .9A.62 .3 0 0 1 .62 .9z'],
+    ['a', Rc(-.04, -.1, .08, 1.0)],
+    ['a', RP('M0 0C-.15 -.45 -.5 -.65 -.88 -.55C-.82 -.15 -.45 .05 0 0z', 0, 0, -.05) + RP('M0 0C.15 -.45 .5 -.65 .88 -.55C.82 -.15 .45 .05 0 0z', 0, 0, -.05)]
+  ]);
+  defineMotif('Houseplant', 'flowers', [
+    ['a', [-150, -90, -30].map(function (d) { return RP('M0 0C.15 -.3 .55 -.3 .78 0C.5 .2 .15 .15 0 0z', d, 0, .05); }).join('')],
+    ['a', Rc(-.58, .05, 1.16, .14)],
+    ['a', Pg(-.5, .19, .5, .19, .38, .9, -.38, .9)],
+    ['b', Rc(-.4, .38, .8, .1)]
+  ]);
+
+  function Face(name, parts) { defineMotif(name, 'faces', [['a', Cc(0, 0, .88)]].concat(parts)); }
+  var DOTS = Cc(-.3, -.15, .1) + Cc(.3, -.15, .1);
+  var SMILE = 'M-.48 .12Q0 .75 .48 .12Q0 .5 -.48 .12z';
+  var FROWN = 'M-.4 .55Q0 .12 .4 .55Q0 .36 -.4 .55z';
+  var OPENM = 'M-.5 .1H.5Q.46 .68 0 .68Q-.46 .68 -.5 .1z';
+  var HRT = 'M0 .14C-.26 -.06 -.2 -.3 0 -.18C.2 -.3 .26 -.06 0 .14z';
+  function HE(x, y) { return 'M' + n3(x - .17) + ' ' + y + 'Q' + x + ' ' + n3(y - .3) + ' ' + n3(x + .17) + ' ' + y + 'Q' + x + ' ' + n3(y - .14) + ' ' + n3(x - .17) + ' ' + y + 'z'; }
+  function SE(x, y) { return 'M' + n3(x - .17) + ' ' + y + 'Q' + x + ' ' + n3(y + .3) + ' ' + n3(x + .17) + ' ' + y + 'Q' + x + ' ' + n3(y + .14) + ' ' + n3(x - .17) + ' ' + y + 'z'; }
+  Face('Smile', [['cut', DOTS], ['cut', SMILE]]);
+  Face('Grin', [['cut', DOTS], ['cut', OPENM], ['a', El(0, .56, .26, .1)]]);
+  Face('Laugh', [['cut', HE(-.3, -.08) + HE(.3, -.08)], ['cut', OPENM], ['a', El(0, .56, .26, .1)]]);
+  Face('Wink', [['cut', HE(-.3, -.08) + Cc(.3, -.15, .1)], ['cut', SMILE]]);
+  Face('Love', [['cut', RP(HRT, 0, -.3, -.1) + RP(HRT, 0, .3, -.1)], ['cut', SMILE]]);
+  Face('Cool', [['cut', Rr(-.62, -.34, .5, .34, .12) + Rr(.12, -.34, .5, .34, .12) + Rc(-.14, -.28, .28, .07)], ['cut', SMILE]]);
+  Face('Sad', [['cut', DOTS], ['cut', FROWN], ['b', El(-.46, .08, .06, .12)]]);
+  Face('Cry', [['cut', SE(-.3, -.15) + SE(.3, -.15)], ['cut', FROWN], ['b', El(-.38, .15, .07, .17) + El(.38, .15, .07, .17)]]);
+  Face('Angry', [['cut', Cc(-.28, -.1, .09) + Cc(.28, -.1, .09)], ['cut', Ln(-.55, -.46, -.12, -.26, .1) + Ln(.55, -.46, .12, -.26, .1)], ['cut', FROWN]]);
+  Face('Shock', [['cut', Cc(-.3, -.2, .16) + Cc(.3, -.2, .16)], ['a', Cc(-.3, -.2, .06) + Cc(.3, -.2, .06)], ['cut', El(0, .42, .16, .23)]]);
+  Face('Sleepy', [['cut', SE(-.3, -.15) + SE(.3, -.15)], ['cut', El(0, .42, .12, .1)], ['b', Cc(.58, -.5, .07) + Cc(.7, -.66, .05)]]);
+  Face('Kiss', [['cut', HE(-.3, -.08) + Cc(.3, -.15, .1)], ['cut', Cc(-.08, .38, .1)], ['b', RP(HRT, 0, .3, .32)]]);
+  Face('Tongue', [['cut', HE(-.3, -.08) + Cc(.3, -.15, .1)], ['cut', OPENM], ['b', Rr(-.15, .3, .3, .34, .15)]]);
+  Face('Think', [['cut', DOTS], ['cut', Ln(.1, -.52, .55, -.5, .08)], ['cut', Rc(-.36, .4, .46, .08)]]);
+  Face('Nerd', [['cut', Cc(-.3, -.12, .26) + Cc(-.3, -.12, .19) + Cc(.3, -.12, .26) + Cc(.3, -.12, .19) + Rc(-.06, -.16, .12, .05), 'evenodd'], ['a', Cc(-.3, -.12, .07) + Cc(.3, -.12, .07)], ['cut', 'M-.36 .24H.36Q.3 .58 0 .58Q-.3 .58 -.36 .24z'], ['a', Rc(-.08, .24, .16, .14)]]);
+  Face('Blush', [['cut', HE(-.3, -.08) + HE(.3, -.08)], ['cut', SMILE], ['b', El(-.52, .12, .13, .08) + El(.52, .12, .13, .08)]]);
+  defineMotif('Robot', 'faces', [
+    ['a', Ln(0, -.58, 0, -.85, .07) + Cc(0, -.88, .08)],
+    ['a', Rc(-.92, -.12, .17, .42) + Rc(.75, -.12, .17, .42)],
+    ['a', Rr(-.78, -.62, 1.56, 1.35, .2)],
+    ['cut', Rc(-.46, -.34, .3, .3) + Rc(.16, -.34, .3, .3)],
+    ['cut', Rc(-.42, .28, .84, .26)],
+    ['a', Ln(-.21, .28, -.21, .54, .06) + Ln(0, .28, 0, .54, .06) + Ln(.21, .28, .21, .54, .06)]
+  ]);
+  defineMotif('Ghost', 'faces', [
+    ['a', 'M-.72 .88V-.1A.72 .78 0 0 1 .72 -.1V.88L.48 .66L.24 .88L0 .66L-.24 .88L-.48 .66z'],
+    ['cut', Cc(-.26, -.22, .13) + Cc(.26, -.22, .13)],
+    ['cut', El(0, .22, .1, .15)]
+  ]);
+  defineMotif('Alien', 'faces', [
+    ['a', 'M0 .92C-.35 .92 -.82 .4 -.82 -.15C-.82 -.62 -.45 -.88 0 -.88C.45 -.88 .82 -.62 .82 -.15C.82 .4 .35 .92 0 .92z'],
+    ['cut', ElR(-.3, -.08, .27, .14, 28) + ElR(.3, -.08, .27, .14, -28)],
+    ['cut', Rc(-.12, .5, .24, .05)]
+  ]);
+  defineMotif('Skull', 'faces', [
+    ['a', Cc(0, -.14, .72)],
+    ['a', Rr(-.4, .3, .8, .56, .1)],
+    ['cut', Cc(-.29, -.14, .2) + Cc(.29, -.14, .2)],
+    ['cut', Pg(0, .04, .1, .26, -.1, .26)],
+    ['cut', Ln(-.2, .52, -.2, .86, .05) + Ln(0, .52, 0, .86, .05) + Ln(.2, .52, .2, .86, .05)]
+  ]);
+
+  var LEAF1 = 'M0 0C.15 -.25 .45 -.28 .55 -.15C.4 .05 .15 .08 0 0z';
+  defineMotif('Apple', 'food', [
+    ['a', 'M0 -.55C.3 -.8 .85 -.55 .85 0C.85 .55 .5 .9 0 .72C-.5 .9 -.85 .55 -.85 0C-.85 -.55 -.3 -.8 0 -.55z'],
+    ['a', Ln(0, -.55, .1, -.9, .09)],
+    ['a', RP(LEAF1, -10, .1, -.72)],
+    ['b', ElR(-.5, -.1, .07, .2, 15)]
+  ]);
+  defineMotif('Banana', 'food', [
+    ['a', 'M-.82 -.5C-.7 .4 .05 .8 .88 .3C.92 .2 .86 .1 .78 .14C.15 .4 -.45 .05 -.55 -.55C-.6 -.7 -.8 -.65 -.82 -.5z'],
+    ['b', Ln(-.62, -.45, .0, .38, .05)]
+  ]);
+  defineMotif('Cherries', 'food', [
+    ['a', Ln(-.4, .15, .05, -.72, .06) + Ln(.4, .25, .05, -.72, .06)],
+    ['a', RP(LEAF1, -15, .05, -.72)],
+    ['a', Cc(-.4, .45, .32) + Cc(.4, .55, .32)],
+    ['b', Cc(-.5, .35, .07) + Cc(.3, .45, .07)]
+  ]);
+  defineMotif('Strawberry', 'food', [
+    ['a', 'M0 .92C-.3 .78 -.8 .2 -.8 -.25C-.8 -.55 -.5 -.6 0 -.5C.5 -.6 .8 -.55 .8 -.25C.8 .2 .3 .78 0 .92z'],
+    ['a', Pg(-.5, -.5, -.35, -.78, -.15, -.58, 0, -.88, .15, -.58, .35, -.78, .5, -.5, 0, -.4)],
+    ['cut', Cc(-.35, -.15, .05) + Cc(.35, -.15, .05) + Cc(0, -.05, .05) + Cc(-.18, .25, .05) + Cc(.18, .25, .05) + Cc(0, .52, .05) + Cc(-.5, .1, .05) + Cc(.5, .1, .05)]
+  ]);
+  defineMotif('Grapes', 'food', [
+    ['a', Ln(0, -.5, .05, -.82, .08)],
+    ['a', RP(LEAF1, -10, .06, -.8)],
+    ['a', Cc(-.4, -.25, .21) + Cc(0, -.25, .21) + Cc(.4, -.25, .21) + Cc(-.2, .06, .21) + Cc(.2, .06, .21) + Cc(0, .37, .21) + Cc(0, .68, .17)],
+    ['b', Cc(-.46, -.32, .05) + Cc(-.06, -.32, .05) + Cc(.34, -.32, .05) + Cc(-.26, -.01, .05) + Cc(.14, -.01, .05)]
+  ]);
+  defineMotif('Watermelon', 'food', [
+    ['a', 'M-.9 -.25A.9 .9 0 0 0 .9 -.25z'],
+    ['cut', 'M-.72 -.25A.72 .72 0 0 0 .72 -.25z'],
+    ['a', ElR(-.35, .05, .06, .1, 20) + ElR(0, .2, .06, .1, 0) + ElR(.35, .05, .06, .1, -20) + ElR(-.15, -.1, .06, .1, 10) + ElR(.2, -.1, .06, .1, -10)]
+  ]);
+  defineMotif('Orange', 'food', [
+    ['a', Cc(0, 0, .88)],
+    ['cut', Rep(8, function (d) { return Sec(0, 0, .7, d - 18, d + 18); })]
+  ]);
+  defineMotif('Pear', 'food', [
+    ['a', 'M0 -.82C.2 -.82 .3 -.58 .3 -.42C.3 -.2 .75 -.1 .75 .35C.75 .75 .4 .92 0 .92C-.4 .92 -.75 .75 -.75 .35C-.75 -.1 -.3 -.2 -.3 -.42C-.3 -.58 -.2 -.82 0 -.82z'],
+    ['a', Ln(0, -.78, .08, -.96, .07)],
+    ['a', RP(LEAF1, -20, .06, -.9)],
+    ['b', ElR(-.38, .4, .07, .2, 8)]
+  ]);
+  defineMotif('Pineapple', 'food', [
+    ['a', [-35, 0, 35].map(function (d) { return RP('M0 0C-.12 -.25 -.1 -.5 0 -.72C.1 -.5 .12 -.25 0 0z', d, 0, -.28); }).join('')],
+    ['a', El(0, .32, .52, .66)],
+    ['b', Cc(-.22, .1, .06) + Cc(.22, .1, .06) + Cc(0, .3, .06) + Cc(-.3, .45, .06) + Cc(.3, .45, .06) + Cc(0, .65, .06) + Cc(-.2, .0, .0)]
+  ]);
+  defineMotif('Carrot', 'food', [
+    ['a', [-25, 0, 25].map(function (d) { return RP('M0 0C-.1 -.2 -.1 -.45 0 -.55C.1 -.45 .1 -.2 0 0z', d, 0, -.38); }).join('')],
+    ['a', 'M-.34 -.28Q0 -.5 .34 -.28L.05 .92L-.05 .92z'],
+    ['cut', Ln(-.2, -.1, .1, -.1, .04) + Ln(-.12, .2, .14, .2, .04) + Ln(-.06, .5, .08, .5, .04)]
+  ]);
+  defineMotif('Pizza', 'food', [
+    ['a', 'M-.85 -.5A1.25 1.25 0 0 1 .85 -.5L0 .92z'],
+    ['cut', Ln(-.75, -.3, .75, -.3, .05)],
+    ['b', Cc(-.28, -.05, .13) + Cc(.24, -.12, .11) + Cc(0, .35, .11)]
+  ]);
+  defineMotif('Burger', 'food', [
+    ['a', 'M-.82 -.1A.82 .72 0 0 1 .82 -.1z'],
+    ['cut', El(-.3, -.42, .06, .03) + El(0, -.55, .06, .03) + El(.3, -.42, .06, .03) + El(-.15, -.28, .06, .03) + El(.2, -.25, .06, .03)],
+    ['a', 'M-.86 -.02Q-.65 .2 -.43 -.02Q-.22 .2 0 -.02Q.22 .2 .43 -.02Q.65 .2 .86 -.02V.1H-.86z'],
+    ['a', Rr(-.82, .18, 1.64, .22, .11)],
+    ['a', Rr(-.82, .48, 1.64, .32, .16)]
+  ]);
+  defineMotif('Ice cream', 'food', [
+    ['a', Pg(-.42, -.05, .42, -.05, 0, .92)],
+    ['cut', Ln(-.3, .05, .18, .6, .04) + Ln(.3, .05, -.18, .6, .04) + Ln(-.12, .05, .12, .35, .04)],
+    ['a', Cc(0, -.4, .52)],
+    ['a', Cc(-.38, -.02, .15) + Cc(.1, 0, .13)],
+    ['b', Ln(-.2, -.5, -.1, -.45, .05) + Ln(.2, -.35, .3, -.45, .05) + Ln(0, -.7, .1, -.66, .05) + Ln(-.3, -.25, -.2, -.3, .05)]
+  ]);
+  defineMotif('Cupcake', 'food', [
+    ['a', Pg(-.62, 0, .62, 0, .46, .88, -.46, .88)],
+    ['cut', Ln(-.25, .1, -.18, .8, .05) + Ln(0, .1, 0, .8, .05) + Ln(.25, .1, .18, .8, .05)],
+    ['a', Cc(-.35, -.15, .3) + Cc(.35, -.15, .3) + Cc(0, -.38, .36) + Cc(0, -.68, .18)],
+    ['b', Ln(-.4, -.25, -.32, -.2, .05) + Ln(.3, -.3, .38, -.22, .05) + Ln(0, -.45, .08, -.4, .05)]
+  ]);
+  defineMotif('Donut', 'food', [
+    ['a', Cc(0, 0, .88)],
+    ['b', Cc(0, 0, .7) + Cc(0, 0, .27), 'evenodd'],
+    ['a', Rep(8, function (d, i) { var p = Pt(0, 0, .5, d + (i % 2) * 14), q = Pt(p[0], p[1], .11, d + 70); return Ln(p[0], p[1], q[0], q[1], .06); })],
+    ['cut', Cc(0, 0, .27)]
+  ]);
+  defineMotif('Cookie', 'food', [
+    ['a', Cc(0, 0, .88)],
+    ['b', Cc(-.3, -.28, .1) + Cc(.25, -.4, .09) + Cc(.38, .12, .1) + Cc(-.08, .22, .11) + Cc(-.5, .2, .08) + Cc(.0, -.1, .07) + Cc(.15, .55, .08)]
+  ]);
+  defineMotif('Coffee', 'food', [
+    ['a', 'M-.2 -.3Q-.4 -.45 -.2 -.6Q0 -.75 -.2 -.9L-.12 -.9Q.08 -.75 -.12 -.6Q-.32 -.45 -.12 -.3z M.2 -.3Q0 -.45 .2 -.6Q.4 -.75 .2 -.9L.28 -.9Q.48 -.75 .28 -.6Q.08 -.45 .28 -.3z'],
+    ['a', Cc(.55, .2, .3) + Cc(.55, .2, .17), 'evenodd'],
+    ['a', 'M-.75 -.1H.55V.3C.55 .65 .35 .84 -.1 .84C-.55 .84 -.75 .65 -.75 .3z'],
+    ['b', El(-.1, .0, .55, .1)],
+    ['a', Rr(-.9, .88, 1.6, .1, .05)]
+  ]);
+  defineMotif('Egg', 'food', [
+    ['a', 'M-.8 -.1C-.85 -.6 -.3 -.82 .1 -.76C.6 -.8 .9 -.4 .85 0C.9 .5 .5 .86 0 .8C-.5 .9 -.9 .5 -.8 -.1z'],
+    ['b', Cc(-.05, 0, .32)],
+    ['cut', Cc(-.15, -.1, .07)]
+  ]);
+  defineMotif('Cheese', 'food', [
+    ['a', Pg(-.9, .55, .9, .55, .9, -.05, -.9, -.65)],
+    ['cut', Cc(-.4, .2, .14) + Cc(.2, .3, .1) + Cc(.55, .1, .08) + Cc(-.1, -.1, .09) + Cc(-.7, -.2, .09)]
+  ]);
+  defineMotif('Candy', 'food', [
+    ['a', Pg(-.42, 0, -.95, -.42, -.95, .42) + Pg(.42, 0, .95, -.42, .95, .42)],
+    ['a', El(0, 0, .52, .4)],
+    ['b', Ln(-.22, -.34, -.08, .34, .1) + Ln(.12, -.34, .26, .34, .1)]
+  ]);
+
+  function CloudP(dy) { return Cc(-.35, dy + .1, .3) + Cc(.05, dy - .15, .4) + Cc(.42, dy + .05, .32) + Rr(-.65, dy + .1, 1.3, .3, .15); }
+  defineMotif('Sun', 'sky', [
+    ['a', Rep(12, function (d) { return RP('M.52 -.09L.92 0L.52 .09z', d); })],
+    ['a', Cc(0, 0, .4)],
+    ['b', Cc(0, 0, .2)]
+  ]);
+  defineMotif('Moon', 'sky', [
+    ['a', Cres(.85, .7, .35)],
+    ['a', RP(StarP(4, .24, .08), 0, .5, -.05) + RP(StarP(4, .13, .045), 0, .2, .45)]
+  ]);
+  defineMotif('Cloud', 'sky', [['a', CloudP(0)], ['b', Rc(-.45, .22, .5, .06)]]);
+  defineMotif('Rain', 'sky', [
+    ['a', CloudP(-.35)],
+    ['a', Ln(-.4, .35, -.5, .7, .1) + Ln(0, .4, -.1, .8, .1) + Ln(.4, .35, .3, .7, .1)]
+  ]);
+  defineMotif('Storm', 'sky', [
+    ['a', CloudP(-.4)],
+    ['a', Pg(.12, .06, -.22, .5, 0, .5, -.12, .92, .26, .38, .05, .38, .22, .06)]
+  ]);
+  defineMotif('Snowflake', 'sky', [['a', Rep(6, function (d) {
+    var e = Pt(0, 0, .9, d), m = Pt(0, 0, .52, d), b1 = Pt(m[0], m[1], .26, d + 50), b2 = Pt(m[0], m[1], .26, d - 50);
+    return Ln(0, 0, e[0], e[1], .09) + Ln(m[0], m[1], b1[0], b1[1], .07) + Ln(m[0], m[1], b2[0], b2[1], .07);
+  })]]);
+  defineMotif('Umbrella', 'sky', [
+    ['a', 'M-.9 .05A.9 .8 0 0 1 .9 .05Q.7 -.1 .45 .05Q.22 -.1 0 .05Q-.22 -.1 -.45 .05Q-.7 -.1 -.9 .05z'],
+    ['cut', Ln(0, -.7, -.45, -.05, .04) + Ln(0, -.7, 0, -.05, .04) + Ln(0, -.7, .45, -.05, .04)],
+    ['a', Rc(-.03, 0, .06, .74)],
+    ['a', Ln(0, .74, -.1, .88, .07) + Ln(-.1, .88, -.27, .84, .07)]
+  ]);
+  defineMotif('Comet', 'sky', [
+    ['a', Ln(.2, .15, -.85, -.8, .2) + Ln(.15, .35, -.85, -.25, .13) + Ln(.4, .0, -.35, -.88, .13)],
+    ['a', Cc(.4, .38, .36)],
+    ['b', Cc(.3, .3, .12)]
+  ]);
+  defineMotif('Planet', 'sky', [
+    ['a', Cc(0, 0, .5)],
+    ['cut', ElR(0, 0, .5, .13, -20) + ElR(0, 0, .5, .07, -20), 'evenodd'],
+    ['a', ElR(0, 0, .92, .27, -20) + ElR(0, 0, .74, .17, -20), 'evenodd']
+  ]);
+  defineMotif('Flame', 'sky', [
+    ['a', 'M0 -.9C.2 -.5 .75 -.2 .7 .35C.68 .75 .35 .9 0 .9C-.4 .9 -.75 .65 -.7 .25C-.68 -.05 -.45 -.2 -.35 -.4C-.2 -.1 -.1 -.05 -.05 0C-.1 -.4 -.05 -.7 0 -.9z'],
+    ['b', 'M0 .1C.15 .3 .35 .4 .3 .6C.27 .78 .12 .85 0 .85C-.2 .85 -.32 .72 -.3 .55C-.28 .35 -.1 .3 0 .1z']
+  ]);
+  defineMotif('Tornado', 'sky', [
+    ['a', Rr(-.88, -.82, 1.76, .16, .08) + Rr(-.72, -.56, 1.44, .16, .08) + Rr(-.56, -.3, 1.12, .16, .08) + Rr(-.4, -.04, .8, .16, .08) + Rr(-.26, .22, .52, .16, .08) + Rr(-.12, .48, .24, .16, .08)],
+    ['a', Cc(.55, .55, .07) + Cc(.75, .35, .05) + Cc(-.6, .6, .06)]
+  ]);
+  defineMotif('Snowman', 'sky', [
+    ['a', Cc(0, .5, .4)],
+    ['a', Cc(0, -.05, .3)],
+    ['a', Cc(0, -.48, .22)],
+    ['a', Rc(-.2, -.88, .4, .16) + Rc(-.3, -.74, .6, .05)],
+    ['a', Ln(-.28, -.05, -.72, -.3, .05) + Ln(.28, -.05, .72, -.3, .05)],
+    ['cut', Cc(-.08, -.52, .03) + Cc(.08, -.52, .03) + Cc(0, -.05, .04) + Cc(0, .15, .04) + Cc(0, .5, .05)],
+    ['b', Pg(0, -.46, .14, -.42, 0, -.4)]
+  ]);
+  defineMotif('Mountain', 'sky', [
+    ['a', Pg(-.95, .7, -.25, -.6, .1, -.05, .3, -.25, .95, .7)],
+    ['b', Pg(-.25, -.6, -.06, -.3, -.14, -.36, -.24, -.28, -.33, -.36, -.41, -.3)],
+    ['b', Pg(.3, -.25, .42, -.07, .36, -.12, .3, -.05, .26, -.12)]
+  ]);
+  defineMotif('Wind', 'sky', [
+    ['a', 'M-.9 -.4H.3C.75 -.4 .75 -.85 .3 -.85V-.75C.55 -.75 .55 -.5 .3 -.5H-.9z'],
+    ['a', 'M-.9 0H.5C.95 0 .95 .45 .5 .45V.35C.75 .35 .75 .1 .5 .1H-.9z'],
+    ['a', 'M-.6 .55H.1C.4 .55 .4 .9 .1 .9V.8C.25 .8 .25 .65 .1 .65H-.6z']
+  ]);
+  defineMotif('Feather', 'sky', [
+    ['a', 'M-.7 .8C-.9 0 -.3 -.8 .8 -.9C.7 -.2 .3 .5 -.7 .8z'],
+    ['cut', Ln(-.78, .88, .55, -.68, .05)],
+    ['cut', Ln(-.3, .45, -.05, .6, .04) + Ln(-.1, .2, .2, .4, .04) + Ln(.1, -.05, .42, .12, .04) + Ln(.3, -.3, .6, -.15, .04)]
+  ]);
+  defineMotif('Shell', 'sky', [
+    ['a', 'M0 .78L-.86 -.1C-.9 -.55 -.45 -.86 0 -.86C.45 -.86 .9 -.55 .86 -.1z'],
+    ['cut', Ln(0, .7, 0, -.55, .05) + Ln(0, .7, -.5, -.45, .05) + Ln(0, .7, .5, -.45, .05) + Ln(0, .7, -.72, -.1, .05) + Ln(0, .7, .72, -.1, .05)],
+    ['a', Rc(-.2, .7, .4, .16)]
+  ]);
+  defineMotif('Sparkle', 'sky', [
+    ['a', StarP(4, .95, .2)],
+    ['a', RP(StarP(4, .3, .07), 0, .62, -.62) + RP(StarP(4, .22, .06), 0, -.65, .62)]
+  ]);
+  defineMotif('Earth', 'sky', [
+    ['a', Cc(0, 0, .88)],
+    ['cut', 'M-.55 -.4C-.35 -.72 .1 -.62 .1 -.32C.1 -.1 -.2 0 -.3 .2C-.45 .1 -.75 -.1 -.55 -.4z'],
+    ['cut', 'M.22 .1C.5 -.1 .75 .1 .62 .4C.52 .65 .25 .6 .22 .35z'],
+    ['cut', 'M-.3 .45C-.1 .4 .0 .55 -.1 .7C-.2 .75 -.35 .65 -.3 .45z']
+  ]);
+  defineMotif('Sunrise', 'sky', [
+    ['a', 'M-.5 .3A.5 .5 0 0 1 .5 .3z'],
+    ['a', [-180, -150, -120, -90, -60, -30, 0].map(function (d) { return RP('M.64 -.07L.96 0L.64 .07z', d, 0, .3); }).join('')],
+    ['a', Rc(-.95, .36, 1.9, .08) + Rc(-.65, .55, 1.3, .07)]
+  ]);
+  var DROP1 = 'M0 -.38C.14 -.16 .27 -.02 .27 .12C.27 .3 .14 .4 0 .4C-.14 .4 -.27 .3 -.27 .12C-.27 -.02 -.14 -.16 0 -.38z';
+  defineMotif('Raindrops', 'sky', [
+    ['a', RP(DROP1, 0, -.4, -.3) + RP(DROP1, 0, .38, -.05) + RP(DROP1, 0, -.1, .48)],
+    ['b', ElR(-.46, -.2, .04, .09, 15) + ElR(.32, .05, .04, .09, 15) + ElR(-.16, .58, .04, .09, 15)]
+  ]);
+
+  function Pr(x, y, w, h) { return Pg(x, y, x + w, y, x + w, y + h, x, y + h); }
+  defineMotif('Gift', 'objects', [
+    ['a', Rc(-.75, -.2, 1.5, 1.0)], ['a', Rc(-.85, -.45, 1.7, .3)],
+    ['b', Rc(-.1, -.45, .2, 1.25)],
+    ['a', Cc(-.3, -.62, .17) + Cc(.3, -.62, .17)]
+  ]);
+  defineMotif('Balloon', 'objects', [
+    ['a', El(0, -.2, .55, .68)], ['a', Pg(0, .5, -.1, .66, .1, .66)],
+    ['a', Ln(0, .66, .1, .8, .05) + Ln(.1, .8, -.1, .92, .05)],
+    ['b', El(-.22, -.42, .1, .18)]
+  ]);
+  defineMotif('Bell', 'objects', [
+    ['a', 'M-.2 -.65Q-.65 -.5 -.65 .1L-.8 .5L.8 .5L.65 .1Q.65 -.5 .2 -.65Q.1 -.8 0 -.8Q-.1 -.8 -.2 -.65z'],
+    ['a', Cc(0, .68, .17)], ['b', Pr(-.4, .05, .8, .08)]
+  ]);
+  defineMotif('Key', 'objects', [
+    ['a', Cc(-.45, -.3, .4)], ['cut', Cc(-.45, -.3, .17)],
+    ['a', RP(Pr(-.05, -.07, 1.0, .14), 0, 0, 0)],
+    ['a', Pr(.55, .05, .12, .25) + Pr(.8, .05, .12, .35)]
+  ]);
+  defineMotif('Bulb', 'objects', [
+    ['a', Cc(0, -.2, .55)], ['a', Pg(-.25, .25, .25, .25, .22, .45, -.22, .45)],
+    ['a', Rr(-.25, .5, .5, .12, .06) + Rr(-.18, .67, .36, .12, .06)],
+    ['b', Ln(-.15, .2, -.15, -.1, .06) + Ln(.15, .2, .15, -.1, .06) + Ln(-.15, -.1, 0, .0, .06) + Ln(.15, -.1, 0, 0, .06)]
+  ]);
+  defineMotif('Book', 'objects', [
+    ['a', 'M0 -.5Q-.45 -.7 -.9 -.55L-.9 .5Q-.45 .35 0 .55z'],
+    ['a', 'M0 -.5Q.45 -.7 .9 -.55L.9 .5Q.45 .35 0 .55z'],
+    ['b', Ln(-.7, -.25, -.2, -.2, .06) + Ln(-.7, 0, -.2, .05, .06) + Ln(.7, -.25, .2, -.2, .06) + Ln(.7, 0, .2, .05, .06)]
+  ]);
+  defineMotif('Pencil', 'objects', [
+    ['a', RP(Pr(-.75, -.17, 1.1, .34), -45)],
+    ['a', RP(Pg(.35, -.17, .8, 0, .35, .17), -45)],
+    ['b', RP(Pr(-.55, -.17, .1, .34), -45)]
+  ]);
+  defineMotif('Camera', 'objects', [
+    ['a', Rr(-.85, -.4, 1.7, 1.1, .15)], ['a', Pg(-.4, -.4, -.25, -.65, .25, -.65, .4, -.4)],
+    ['cut', Cc(0, .15, .38)], ['b', Cc(0, .15, .2)],
+    ['cut', Cc(.62, -.2, .06)]
+  ]);
+  defineMotif('Phone', 'objects', [
+    ['a', Rr(-.42, -.88, .84, 1.76, .14)],
+    ['cut', Rr(-.32, -.7, .64, 1.3, .04)],
+    ['b', Cc(0, .74, .06)]
+  ]);
+  defineMotif('Clock', 'objects', [
+    ['a', Cc(0, 0, .85)], ['cut', Cc(0, 0, .68)],
+    ['b', Ln(0, 0, 0, -.5, .1) + Ln(0, 0, .33, .15, .1) + Cc(0, 0, .09)],
+    ['b', Cc(0, -.58, .05) + Cc(0, .58, .05) + Cc(.58, 0, .05) + Cc(-.58, 0, .05)]
+  ]);
+  defineMotif('Crown', 'objects', [
+    ['a', Pg(-.85, .55, -.85, -.35, -.4, .05, 0, -.5, .4, .05, .85, -.35, .85, .55)],
+    ['b', Cc(-.4, .3, .08) + Cc(0, .3, .08) + Cc(.4, .3, .08)],
+    ['a', Cc(-.85, -.4, .1) + Cc(0, -.58, .1) + Cc(.85, -.4, .1)]
+  ]);
+  defineMotif('Gem', 'objects', [
+    ['a', Pg(-.5, -.6, .5, -.6, .9, -.1, 0, .85, -.9, -.1)],
+    ['b', Pg(-.5, -.6, -.2, -.1, 0, -.6) + Pg(.5, -.6, .2, -.1, 0, -.6) + Pg(-.9, -.1, -.2, -.1, 0, .85) + Pg(.9, -.1, .2, -.1, 0, .85)]
+  ]);
+  function EP(cx, cy, rx, ry, n) { var a = []; for (var i = 0; i < n; i++) { var t = i * 2 * Math.PI / n; a.push(cx + rx * Math.cos(t), cy + ry * Math.sin(t)); } return Pg.apply(null, a); }
+  defineMotif('Guitar', 'objects', [
+    ['a', RP(EP(0, .4, .5, .45, 24), 40) + RP(EP(0, -.05, .36, .32, 24), 40)],
+    ['cut', RP(EP(0, .22, .15, .15, 16), 40)],
+    ['a', RP(Pr(-.07, -.95, .14, 1.0), 40)],
+    ['a', RP(Pr(-.12, -1.1, .24, .22), 40)]
+  ]);
+  defineMotif('Note', 'objects', [
+    ['a', El(-.45, .55, .26, .2) + El(.5, .4, .26, .2)],
+    ['a', Pr(-.28, -.5, .1, 1.05) + Pr(.67, -.65, .1, 1.05)],
+    ['a', Pg(-.28, -.55, .77, -.7, .77, -.4, -.28, -.25)]
+  ]);
+  defineMotif('Headphones', 'objects', [
+    ['a', 'M-.75 .25Q-.75 -.8 0 -.8Q.75 -.8 .75 .25L.58 .25Q.58 -.62 0 -.62Q-.58 -.62 -.58 .25z'],
+    ['a', Rr(-.95, .1, .38, .65, .12) + Rr(.57, .1, .38, .65, .12)],
+    ['b', Rr(-.85, .25, .18, .35, .06) + Rr(.67, .25, .18, .35, .06)]
+  ]);
+  defineMotif('Trophy', 'objects', [
+    ['a', 'M-.55 -.7L.55 -.7Q.55 .2 0 .3Q-.55 .2 -.55 -.7z'],
+    ['a', Ln(-.55, -.55, -.85, -.5, .08) + Ln(-.85, -.5, -.7, -.05, .08) + Ln(-.7, -.05, -.45, -.02, .08)],
+    ['a', Ln(.55, -.55, .85, -.5, .08) + Ln(.85, -.5, .7, -.05, .08) + Ln(.7, -.05, .45, -.02, .08)],
+    ['a', Pr(-.1, .25, .2, .3) + Rr(-.4, .55, .8, .22, .06)],
+    ['b', StarP(5, .22, .09, -90)]
+  ]);
+  defineMotif('Ball', 'objects', [
+    ['a', Cc(0, 0, .88)], ['cut', RegP(5, .26, -90)],
+    ['cut', Rep(5, function (d) { var p = Pt(0, 0, .58, d - 90); return Ln(p[0], p[1], Pt(0, 0, .84, d - 90)[0], Pt(0, 0, .84, d - 90)[1], .07); })]
+  ]);
+  defineMotif('Kite', 'objects', [
+    ['a', Pg(0, -.9, .55, -.2, 0, .45, -.55, -.2)],
+    ['b', Ln(0, -.9, 0, .45, .06) + Ln(-.55, -.2, .55, -.2, .06)],
+    ['a', Ln(0, .45, .2, .65, .04) + Ln(.2, .65, -.2, .8, .04) + Ln(-.2, .8, .1, .95, .04)]
+  ]);
+  defineMotif('Anchor', 'objects', [
+    ['a', Cc(0, -.7, .16)], ['cut', Cc(0, -.7, .07)],
+    ['a', Pr(-.06, -.55, .12, 1.3)], ['a', Pr(-.35, -.35, .7, .1)],
+    ['a', 'M-.8 .1L-.62 .1Q-.5 .55 0 .6Q.5 .55 .62 .1L.8 .1Q.75 .85 0 .85Q-.75 .85 -.8 .1z']
+  ]);
+  defineMotif('Lock', 'objects', [
+    ['a', 'M-.4 -.1L-.4 -.35Q-.4 -.85 0 -.85Q.4 -.85 .4 -.35L.4 -.1L.25 -.1L.25 -.35Q.25 -.7 0 -.7Q-.25 -.7 -.25 -.35L-.25 -.1z'],
+    ['a', Rr(-.65, -.1, 1.3, 1.0, .1)],
+    ['cut', Cc(0, .3, .12) + Pr(-.04, .3, .08, .3)]
+  ]);
+
+
+    /* ---------- tiny GIF writer: palette from a few sample frames, LZW per frame ---------- */
+  function gifPalette(frames) {
+    var sum = new Map();
+    frames.forEach(function (d) {
+      for (var i = 0; i < d.length; i += 4) {
+        var key = ((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3);
+        var e = sum.get(key);
+        if (!e) { e = [0, 0, 0, 0]; sum.set(key, e); }
+        e[0] += d[i]; e[1] += d[i + 1]; e[2] += d[i + 2]; e[3]++;
+      }
+    });
+    var list = Array.from(sum.values()).sort(function (a, b) { return b[3] - a[3]; }).slice(0, 255);
+    var pal = new Uint8Array(256 * 3);
+    list.forEach(function (e, i) {
+      pal[i * 3] = Math.round(e[0] / e[3]); pal[i * 3 + 1] = Math.round(e[1] / e[3]); pal[i * 3 + 2] = Math.round(e[2] / e[3]);
+    });
+    return { pal: pal, n: Math.max(1, list.length), cache: new Map() };
+  }
+  function gifIndex(P, r, g, b) {
+    var key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+    var hit = P.cache.get(key);
+    if (hit !== undefined) return hit;
+    var best = 0, bd = Infinity;
+    var qr = (r & 248) | 4, qg = (g & 248) | 4, qb = (b & 248) | 4;
+    for (var i = 0; i < P.n; i++) {
+      var dr = P.pal[i * 3] - qr, dg = P.pal[i * 3 + 1] - qg, db = P.pal[i * 3 + 2] - qb;
+      var d = dr * dr + dg * dg + db * db;
+      if (d < bd) { bd = d; best = i; }
+    }
+    P.cache.set(key, best);
+    return best;
+  }
+  function gifLzw(idx, out) {
+    var CLEAR = 256, EOI = 257, size = 9, next = 258, dict = new Map();
+    var buf = 0, bits = 0, block = [];
+    function put(code) {
+      buf |= code << bits; bits += size;
+      while (bits >= 8) {
+        block.push(buf & 255); buf >>>= 8; bits -= 8;
+        if (block.length === 255) { out.push(255); for (var k = 0; k < 255; k++) out.push(block[k]); block = []; }
+      }
+    }
+    put(CLEAR);
+    var cur = idx[0];
+    for (var i = 1; i < idx.length; i++) {
+      var c = idx[i], key = cur * 256 + c, got = dict.get(key);
+      if (got !== undefined) { cur = got; continue; }
+      put(cur);
+      if (next < 4096) {
+        dict.set(key, next++);
+        if (next - 1 === (1 << size) && size < 12) size++;
+      } else {
+        put(CLEAR); dict = new Map(); size = 9; next = 258;
+      }
+      cur = c;
+    }
+    put(cur); put(EOI);
+    if (bits > 0) block.push(buf & 255);
+    if (block.length) { out.push(block.length); for (var j = 0; j < block.length; j++) out.push(block[j]); }
+    out.push(0);
+  }
+  function gifHeader(w, h, P, out) {
+    'GIF89a'.split('').forEach(function (ch) { out.push(ch.charCodeAt(0)); });
+    out.push(w & 255, w >> 8, h & 255, h >> 8, 0xF7, 0, 0);
+    for (var i = 0; i < 768; i++) out.push(P.pal[i]);
+    out.push(0x21, 0xFF, 11);
+    'NETSCAPE2.0'.split('').forEach(function (ch) { out.push(ch.charCodeAt(0)); });
+    out.push(3, 1, 0, 0, 0);
+  }
+  function gifFrame(w, h, data, P, delayCs, out) {
+    var idx = new Uint8Array(w * h);
+    for (var i = 0, p = 0; i < data.length; i += 4, p++) idx[p] = gifIndex(P, data[i], data[i + 1], data[i + 2]);
+    out.push(0x21, 0xF9, 4, 0x04, delayCs & 255, delayCs >> 8, 0, 0);
+    out.push(0x2C, 0, 0, 0, 0, w & 255, w >> 8, h & 255, h >> 8, 0, 8);
+    gifLzw(idx, out);
+  }
+
+
+  var PALETTES = [
+    { name: 'Blush', bg: '#F7D9DF', a: '#D4476B', b: '#FFF3EE' },
+    { name: 'Lagoon', bg: '#0E3B47', a: '#F4C95D', b: '#DDF1F0' },
+    { name: 'Meadow', bg: '#D9E8CF', a: '#3D7A57', b: '#F2DC6B' },
+    { name: 'Delft', bg: '#F2F5F9', a: '#2551A6', b: '#92B2E6' },
+    { name: 'Ink', bg: '#1D1B30', a: '#ECEAF8', b: '#7F6BFF' },
+    { name: 'Tangerine', bg: '#F7893B', a: '#FFF0DA', b: '#2E2A47' },
+    { name: 'Plum', bg: '#3B1D40', a: '#F3A8C4', b: '#F5E3A0' },
+    { name: 'Paper', bg: '#F1EFEA', a: '#6B6A66', b: '#BDBAB3' },
+    { name: 'My colours', bg: '#F1EFEA', a: '#3D7A57', b: '#F2DC6B', custom: true }
+  ];
+  var LAYOUTS = [['grid', 'Grid'], ['brick', 'Brick'], ['drop', 'Half-drop']];
+  var TURNS = [['none', 'Straight'], ['alt', 'Alternate'], ['spin', 'Spin'], ['scatter', 'Scatter']];
+  var STYLES = [['flat', 'Flat'], ['emboss', 'Embossed']];
+  var MODES = [['fill', 'Single'], ['mix3', 'Mix 3'], ['mix5', 'Mix 5'], ['paint', 'Paint tiles']];
+  var FORMATS = [
+    ['free', 'Fit screen', 0, 0],
+    ['square', 'Square', 2048, 2048],
+    ['portrait', 'Portrait', 1536, 2048],
+    ['landscape', 'Landscape', 2048, 1536],
+    ['banner', 'Banner', 3000, 1000],
+    ['phone', 'Phone', 1080, 2340]
+  ];
+  function fmtOf(k) { for (var i = 0; i < FORMATS.length; i++) if (FORMATS[i][0] === k) return FORMATS[i]; return FORMATS[0]; }
+  function isMix() { return state.mode === 'mix3' || state.mode === 'mix5'; }
+  function maxSel() { return state.mode === 'mix5' ? 5 : (state.mode === 'mix3' ? 3 : 1); }
+  var MIXES = [['order', 'Repeat'], ['rows', 'Rows'], ['random', 'Random']];
+  var SLOTS = [['bg', 'Background'], ['a', 'Main'], ['b', 'Accent']];
+  var SWATCHES = [
+    '#FFFFFF', '#F1EFEA', '#D9D6CE', '#9A9892', '#5C5B57', '#2B2D42', '#14141A',
+    '#FFF0DA', '#FFC857', '#F7893B', '#E4572E', '#D4476B', '#F7D9DF', '#9E2A3B',
+    '#DDF1F0', '#92B2E6', '#2551A6', '#0E3B47', '#7F6BFF', '#C9B8FF', '#3B1D40',
+    '#D9E8CF', '#A8D5BA', '#3D7A57', '#1F4D3A', '#F2DC6B', '#B7E4F5', '#6C4A3A'
+  ];
+  var CATS = [['shapes', 'Shapes'], ['animals', 'Animals'], ['buildings', 'Buildings'], ['cars', 'Vehicles'], ['flowers', 'Plants'], ['faces', 'Faces'], ['food', 'Food'], ['sky', 'Sky'], ['objects', 'Objects']];
+
+  var state = {
+    pal: 0, sel: [4], brush: 4, mixRule: 'order', slot: 'bg', cats: ['shapes'], format: 'free', layout: 'brick', turn: 'none',
+    cols: 5, size: 80, style: 'flat', mode: 'fill', seed: 7, ripple: false
+  };
+  var painted = new Map();
+  var turns = new Map();
+
+  function $(id) { return document.getElementById(id); }
+  var sheetBox = $('sheetBox');
+  var canvas = $('sheet');
+  var ctx = canvas.getContext('2d');
+  function getDpr() { return Math.min(window.devicePixelRatio || 1, 3); }
+
+  /* ---------- drawing ---------- */
+  function hash(a, b, c) {
+    var h = Math.imul(a, 374761393) ^ Math.imul(b, 668265263) ^ Math.imul(c, 1274126177);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+  function baseTurn(r, c) {
+    switch (state.turn) {
+      case 'alt': return (r + c) & 1;
+      case 'spin': return (c + r) & 3;
+      case 'scatter': return hash(r, c, state.seed) & 3;
+      default: return 0;
+    }
+  }
+  function center(r, c, s) {
+    if (state.layout === 'brick') return [(c + 0.5 + ((r & 1) ? 0.5 : 0)) * s, (r + 0.5) * s];
+    if (state.layout === 'drop') return [(c + 0.5) * s, (r + 0.5 + ((c & 1) ? 0.5 : 0)) * s];
+    return [(c + 0.5) * s, (r + 0.5) * s];
+  }
+  function mixIndex(r, c, n) {
+    switch (state.mixRule) {
+      case 'rows': return ((r % n) + n) % n;
+      case 'random': return hash(r, c, state.seed + 11) % n;
+      default: return (((r + c) % n) + n) % n;
+    }
+  }
+  function motifAt(r, c) {
+    var k = r + ',' + c;
+    if (painted.has(k)) return painted.get(k);
+    var n = state.sel.length;
+    return n === 1 ? state.sel[0] : state.sel[mixIndex(r, c, n)];
+  }
+
+  var cellsCache = [];
+  /* Paints the whole pattern onto any canvas context. dpr only scales the embossed shadows. */
+  function paintSheet(g, W, H, t, dpr, ripple, collect) {
+    var pal = PALETTES[state.pal];
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = pal.bg;
+    g.fillRect(0, 0, W, H);
+    var s = W / state.cols;
+    var rows = Math.ceil(H / s) + 1;
+    var half = (s / 2) * state.size / 100;
+    if (collect) cellsCache = [];
+    for (var r = -1; r <= rows; r++) {
+      for (var c = -1; c <= state.cols; c++) {
+        var p = center(r, c, s);
+        var x = p[0], y = p[1];
+        if (x < -s || x > W + s || y < -s || y > H + s) continue;
+        var k = r + ',' + c;
+        var turn = (baseTurn(r, c) + (turns.get(k) || 0)) & 3;
+        var pulse = ripple ? 1 + 0.16 * Math.sin(t / RIPPLE_MS - (r + c) * 0.75) : 1;
+        drawMotif(g, MOTIFS[motifAt(r, c)], x, y, half * pulse, turn * Math.PI / 2, pal, state.style, dpr);
+        if (collect) cellsCache.push({ k: k, r: r, c: c, x: x, y: y });
+      }
+    }
+  }
+  var RIPPLE_MS = 420;
+  function draw(t) {
+    if (t === undefined) t = performance.now();
+    if (!canvas.width || !canvas.height) return;
+    paintSheet(ctx, canvas.width, canvas.height, t, getDpr(), state.ripple, true);
+  }
+
+  /* ---------- tapping and painting ---------- */
+  function cellAt(px, py) {
+    var best = null, bd = Infinity;
+    for (var i = 0; i < cellsCache.length; i++) {
+      var c = cellsCache[i];
+      var d = (c.x - px) * (c.x - px) + (c.y - py) * (c.y - py);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+  function hit(e) {
+    var r = canvas.getBoundingClientRect();
+    return cellAt((e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height);
+  }
+  function rotateTile(k) { turns.set(k, ((turns.get(k) || 0) + 1) & 3); }
+  function tap(cell, first) {
+    var k = cell.k;
+    if (state.mode !== 'paint') {
+      if (first) rotateTile(k);
+    } else if (motifAt(cell.r, cell.c) === state.brush) {
+      if (first) rotateTile(k);
+    } else {
+      painted.set(k, state.brush);
+      turns.delete(k);
+    }
+    draw();
+  }
+  var dragging = false, lastKey = '';
+  canvas.addEventListener('pointerdown', function (e) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* not needed */ }
+    dragging = true;
+    var cell = hit(e);
+    if (cell) { lastKey = cell.k; tap(cell, true); }
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    var cell = hit(e);
+    if (cell && cell.k !== lastKey) { lastKey = cell.k; tap(cell, false); }
+  });
+  ['pointerup', 'pointercancel'].forEach(function (n) {
+    canvas.addEventListener(n, function () { dragging = false; lastKey = ''; });
+  });
+
+  /* ---------- controls ---------- */
+  function syncSeg(id, key) {
+    var btns = $(id).querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].setAttribute('aria-pressed', String(btns[i].dataset.v === String(state[key])));
+    }
+  }
+  function svg(inner) { return '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="currentColor">' + inner + '</svg>'; }
+  function dots(list, r) { return list.map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r || 2.4) + '"/>'; }).join(''); }
+  var ARROW = '<path d="M12 3L19 12H14.5V21H9.5V12H5z"/>';
+  function arrow(rot, sc, tx, ty) { return '<g transform="translate(' + (tx || 0) + ' ' + (ty || 0) + ') rotate(' + rot + ' 12 12) translate(12 12) scale(' + sc + ') translate(-12 -12)">' + ARROW + '</g>'; }
+  var ICONS = {
+    fill: svg(dots([[12, 12]], 6)),
+    mix3: svg(dots([[7, 16], [17, 16], [12, 7]], 4)),
+    mix5: svg(dots([[6, 7], [18, 7], [12, 12], [6, 17], [18, 17]], 3.2)),
+    paint: svg('<path d="M19.5 3.5l1 1c.6.6.6 1.5 0 2.1L12 15l-3-3 8.4-8.5c.6-.6 1.5-.6 2.1 0z"/><path d="M7.5 13.5C5 13.5 4 15.3 4 17c0 1.7-.8 2.5-1.5 3 3.5.8 8-.2 8-3.5l-3-3z"/>'),
+    grid: svg(dots([[5, 5], [12, 5], [19, 5], [5, 12], [12, 12], [19, 12], [5, 19], [12, 19], [19, 19]], 2.4)),
+    brick: svg(dots([[5, 5], [12, 5], [19, 5], [8.5, 12], [15.5, 12], [5, 19], [12, 19], [19, 19]], 2.4)),
+    drop: svg(dots([[5, 5], [5, 12], [5, 19], [12, 8.5], [12, 15.5], [19, 5], [19, 12], [19, 19]], 2.4)),
+    none: svg(arrow(0, 1)),
+    alt: svg(arrow(0, 0.6, -5, 0) + arrow(180, 0.6, 5, 0)),
+    spin: svg('<path d="M12 4a8 8 0 1 0 8 8h-3a5 5 0 1 1-5-5v3.5l5-4.5-5-4.5V4z"/>'),
+    scatter: svg(arrow(0, 0.55, -6, -5) + arrow(100, 0.55, 6, -3) + arrow(215, 0.55, -2, 7)),
+    flat: svg('<circle cx="12" cy="12" r="8"/>'),
+    emboss: svg('<circle cx="12" cy="12" r="8" fill-opacity="0.35"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="26 100" transform="rotate(-135 12 12)"/>'),
+    ripple: svg('<circle cx="12" cy="12" r="2.6"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.7"/>'),
+    picture: svg('<path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2v8.2l4-4.2 3 3 3.5-4.5L19 14V7H5zm11.5 1.2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>'),
+    film: svg('<path d="M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm3 2H5v2h2V6zm0 4H5v2h2v-2zm0 4H5v2h2v-2zm12-8h-2v2h2V6zm0 4h-2v2h2v-2zm0 4h-2v2h2v-2zM9 6v12h6V6H9z"/>')
+  };
+  function fillIcons() {
+    var els = document.querySelectorAll('[data-ico]');
+    for (var q = 0; q < els.length; q++) els[q].innerHTML = ICONS[els[q].dataset.ico] || '';
+  }
+  function buildSeg(id, opts, key, onChange) {
+    var el = $(id);
+    opts.forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      if (ICONS[o[0]] && id !== 'seg-cat') {
+        var ic = document.createElement('span');
+        ic.className = 'ico';
+        ic.innerHTML = ICONS[o[0]];
+        b.appendChild(ic);
+      }
+      b.appendChild(document.createTextNode(o[1]));
+      b.dataset.v = o[0];
+      b.addEventListener('click', function () {
+        state[key] = o[0];
+        syncSeg(id, key);
+        if (onChange) onChange();
+      });
+      el.appendChild(b);
+    });
+  }
+
+  var trayBtns = [];
+  var tray = $('tray');
+  function catIndex(m) {
+    for (var q = 0; q < CATS.length; q++) if (CATS[q][0] === (m.cat || 'shapes')) return q;
+    return 0;
+  }
+  function addToMix(i) {
+    var at = state.sel.indexOf(i);
+    if (at >= 0) {
+      if (state.sel.length > 1) state.sel.splice(at, 1);
+    } else {
+      state.sel.push(i);
+      if (state.sel.length > maxSel()) state.sel.shift();
+    }
+  }
+  var perCat = {};
+  MOTIFS.forEach(function (m, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'motif';
+    b.setAttribute('aria-label', m.name);
+    b.title = m.name;
+    var ci = catIndex(m);
+    perCat[ci] = (perCat[ci] || 0) + 1;
+    b.style.order = String(ci * 100 + perCat[ci]);
+    var cv = document.createElement('canvas');
+    cv.width = 56; cv.height = 56;
+    b.appendChild(cv);
+    b.addEventListener('click', function () {
+      state.brush = i;
+      if (state.mode === 'fill') {
+        state.sel = [i];
+        painted.clear(); turns.clear();
+      } else if (isMix()) {
+        addToMix(i);
+        painted.clear(); turns.clear();
+      }
+      syncMixUI();
+      renderIcons();
+      draw();
+    });
+    tray.appendChild(b);
+    trayBtns.push(b);
+  });
+
+  function catOn(m) { return state.cats.indexOf(m.cat || 'shapes') >= 0; }
+  function applyCat() {
+    trayBtns.forEach(function (b, i) { b.hidden = !catOn(MOTIFS[i]); });
+    var btns = $('seg-cat').querySelectorAll('button');
+    for (var q = 0; q < btns.length; q++) {
+      var v = btns[q].dataset.v;
+      btns[q].setAttribute('aria-pressed', String(v === 'all' ? state.cats.length === CATS.length : state.cats.indexOf(v) >= 0));
+    }
+    renderIcons();
+  }
+  (function buildCats() {
+    var el = $('seg-cat');
+    [['all', 'All']].concat(CATS).forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = o[1];
+      b.dataset.v = o[0];
+      b.addEventListener('click', function () {
+        var all = state.cats.length === CATS.length;
+        if (o[0] === 'all') {
+          state.cats = all ? [state.cat0 || 'shapes'] : CATS.map(function (c) { return c[0]; });
+        } else if (all) {
+          state.cats = [o[0]];
+        } else {
+          var at = state.cats.indexOf(o[0]);
+          if (at >= 0) { if (state.cats.length > 1) state.cats.splice(at, 1); }
+          else state.cats.push(o[0]);
+        }
+        state.cat0 = state.cats[0];
+        applyCat();
+      });
+      el.appendChild(b);
+    });
+  })();
+  function renderIcons() {
+    var dpr = getDpr();
+    var pal = PALETTES[state.pal];
+    trayBtns.forEach(function (b, i) {
+      var at = state.sel.indexOf(i);
+      var on = state.mode === 'paint' ? i === state.brush : at >= 0;
+      b.setAttribute('aria-pressed', String(on));
+      if (state.mode !== 'paint' && state.sel.length > 1 && at >= 0) b.dataset.n = String(at + 1);
+      else delete b.dataset.n;
+      if (b.hidden) return;
+      var cv = b.firstChild;
+      var px = Math.max(40, Math.round(b.clientWidth * dpr));
+      if (cv.width !== px) { cv.width = px; cv.height = px; }
+      var g = cv.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillStyle = pal.bg;
+      g.fillRect(0, 0, px, px);
+      drawMotif(g, MOTIFS[i], px / 2, px / 2, px / 2 * 0.72, 0, pal, state.style, dpr);
+    });
+    renderMixBar();
+  }
+
+  function renderMixBar() {
+    var bar = $('mixbar');
+    bar.hidden = !isMix();
+    if (!isMix()) return;
+    var n = maxSel(), dpr = getDpr(), pal = PALETTES[state.pal];
+    bar.textContent = '';
+    for (var q = 0; q < n; q++) {
+      (function (q) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        var idx = state.sel[q];
+        if (idx === undefined) {
+          b.className = 'empty';
+          b.textContent = '+';
+          b.setAttribute('aria-label', 'Empty slot ' + (q + 1) + ' of ' + n + '. Pick a motif below.');
+          b.addEventListener('click', function () { tray.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+        } else {
+          var cv = document.createElement('canvas');
+          var px = 120;
+          cv.width = px; cv.height = px;
+          var g = cv.getContext('2d');
+          g.fillStyle = pal.bg; g.fillRect(0, 0, px, px);
+          drawMotif(g, MOTIFS[idx], px / 2, px / 2, px / 2 * 0.72, 0, pal, state.style, dpr * 2);
+          b.appendChild(cv);
+          var num = document.createElement('span');
+          num.className = 'num'; num.textContent = String(q + 1);
+          b.appendChild(num);
+          b.setAttribute('aria-label', MOTIFS[idx].name + ', slot ' + (q + 1) + '. Tap to remove.');
+          b.addEventListener('click', function () {
+            if (state.sel.length > 1) {
+              state.sel.splice(q, 1);
+              painted.clear(); turns.clear();
+              syncMixUI(); renderIcons(); draw();
+            }
+          });
+        }
+        bar.appendChild(b);
+      })(q);
+    }
+  }
+
+  var palBtns = [];
+  var customIdx = PALETTES.length - 1;
+  var custom = PALETTES[customIdx];
+  function isHex(v) { return typeof v === 'string' && /^#[0-9A-Fa-f]{6}$/.test(v); }
+  try {
+    var saved = JSON.parse(localStorage.getItem('patternroll.custom') || 'null');
+    if (saved && isHex(saved.bg) && isHex(saved.a) && isHex(saved.b)) {
+      custom.bg = saved.bg; custom.a = saved.a; custom.b = saved.b; custom.touched = true;
+    }
+  } catch (err) { /* storage not available: colours just are not remembered */ }
+  function saveCustom() {
+    try { localStorage.setItem('patternroll.custom', JSON.stringify({ bg: custom.bg, a: custom.a, b: custom.b })); } catch (err) { /* ignore */ }
+  }
+  function paintPalBtn(i) {
+    var p = PALETTES[i], b = palBtns[i];
+    b.style.setProperty('--p0', p.bg);
+    b.style.setProperty('--p1', p.a);
+    b.style.setProperty('--p2', p.b);
+  }
+  PALETTES.forEach(function (p, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = p.custom ? 'pal custom' : 'pal';
+    b.setAttribute('aria-label', p.name);
+    b.title = p.custom ? 'My colours: choose your own' : p.name;
+    b.addEventListener('click', function () {
+      if (p.custom && !p.touched) {
+        var prev = PALETTES[state.pal];
+        if (!prev.custom) { p.bg = prev.bg; p.a = prev.a; p.b = prev.b; }
+        p.touched = true;
+        paintPalBtn(i);
+      }
+      state.pal = i; syncUI(); draw();
+    });
+    $('pals').appendChild(b);
+    palBtns.push(b);
+    paintPalBtn(i);
+  });
+
+  var slotBtns = [];
+  SLOTS.forEach(function (s) {
+    var b = document.createElement('button');
+    var dot = document.createElement('span');
+    b.type = 'button';
+    b.dataset.v = s[0];
+    dot.className = 'dot';
+    b.appendChild(dot);
+    b.appendChild(document.createTextNode(s[1]));
+    b.addEventListener('click', function () { state.slot = s[0]; syncEditor(); });
+    $('slots').appendChild(b);
+    slotBtns.push(b);
+  });
+  var swBtns = [];
+  SWATCHES.forEach(function (hex) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sw';
+    b.style.background = hex;
+    b.dataset.v = hex;
+    b.setAttribute('aria-label', hex);
+    b.title = hex;
+    b.addEventListener('click', function () { custom[state.slot] = hex; customChanged(); });
+    $('swatches').appendChild(b);
+    swBtns.push(b);
+  });
+  function syncEditor() {
+    $('editor').hidden = !PALETTES[state.pal].custom;
+    slotBtns.forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.v === state.slot));
+      b.firstChild.style.background = custom[b.dataset.v];
+    });
+    swBtns.forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.v.toLowerCase() === custom[state.slot].toLowerCase()));
+    });
+  }
+  function customChanged() {
+    custom.touched = true;
+    paintPalBtn(customIdx);
+    saveCustom();
+    syncEditor();
+    renderIcons();
+    draw();
+  }
+  function lum(hex) {
+    var v = [1, 3, 5].map(function (i) {
+      var c = parseInt(hex.substr(i, 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  }
+  function ratio(h1, h2) {
+    var a = lum(h1), b = lum(h2);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  }
+  $('swapBtn').addEventListener('click', function () {
+    var t = custom.bg; custom.bg = custom.a; custom.a = t; customChanged();
+  });
+  $('randBtn').addEventListener('click', function () {
+    var bg = pick(SWATCHES), a, b, n = 0;
+    do { a = pick(SWATCHES); n++; } while (ratio(bg, a) < 3 && n < 60);
+    n = 0;
+    do { b = pick(SWATCHES); n++; } while ((b === bg || b === a || ratio(a, b) < 1.8) && n < 60);
+    custom.bg = bg; custom.a = a; custom.b = b;
+    customChanged();
+  });
+
+  var HINTS = {
+    fill: 'Pick a motif to fill the whole sheet. Tap a tile to turn it.',
+    mix3: 'Fill the 3 slots with motifs from any types. Tap a filled slot to remove it. Tap a tile on the sheet to turn it.',
+    mix5: 'Fill the 5 slots with motifs from any types. Tap a filled slot to remove it. Tap a tile on the sheet to turn it.',
+    paint: 'Pick a brush, then tap or drag across tiles to place it. Tap a tile that already has the brush to turn it.'
+  };
+  function updateHint() { $('hint').textContent = HINTS[state.mode]; }
+  function syncMixUI() { $('field-mix').hidden = !isMix() || state.sel.length < 2; }
+  function syncUI() {
+    ['layout', 'turn', 'style', 'mode', 'format', 'mixRule'].forEach(function (k) { syncSeg('seg-' + k, k); });
+    showSliders();
+    palBtns.forEach(function (b, i) { b.setAttribute('aria-pressed', String(i === state.pal)); });
+    applyCat();
+    updateHint();
+    syncMixUI();
+    syncEditor();
+    applyFormat();
+  }
+
+  buildSeg('seg-mode', MODES, 'mode', function () {
+    if (state.mode === 'fill' && state.sel.length > 1) { state.sel = [state.sel[0]]; painted.clear(); turns.clear(); draw(); }
+    if (isMix()) {
+      while (state.sel.length > maxSel()) state.sel.pop();
+      painted.clear(); turns.clear(); draw();
+    }
+    updateHint(); syncMixUI(); renderIcons();
+  });
+  (function buildFormats() {
+    var el = $('seg-format');
+    FORMATS.forEach(function (f) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.v = f[0];
+      var box = document.createElement('span');
+      box.className = 'shapebox';
+      var rect = document.createElement('i');
+      var ratio = f[2] ? f[2] / f[3] : 0.8;
+      var h = ratio >= 1 ? Math.max(14, Math.round(36 / ratio)) : 36;
+      var w = ratio >= 1 ? 36 : Math.round(36 * ratio);
+      if (ratio >= 1) { w = Math.min(60, Math.round(h * ratio)); }
+      if (!f[2]) rect.className = 'free';
+      rect.style.width = w + 'px'; rect.style.height = h + 'px';
+      box.appendChild(rect);
+      b.appendChild(box);
+      b.appendChild(document.createTextNode(f[1]));
+      if (f[2]) {
+        var d = document.createElement('span');
+        d.className = 'dims';
+        d.textContent = f[2] + '×' + f[3];
+        b.appendChild(d);
+      }
+      b.addEventListener('click', function () { state.format = f[0]; syncSeg('seg-format', 'format'); applyFormat(); });
+      el.appendChild(b);
+    });
+  })();
+  buildSeg('seg-mixRule', MIXES, 'mixRule', function () { draw(); });
+  buildSeg('seg-layout', LAYOUTS, 'layout', function () { draw(); });
+  buildSeg('seg-turn', TURNS, 'turn', function () { draw(); });
+  buildSeg('seg-style', STYLES, 'style', function () { renderIcons(); draw(); });
+
+  function updatePct(el) {
+    var pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--pct', pct + '%');
+  }
+  function showSliders() {
+    $('cols').value = state.cols; $('colsOut').textContent = state.cols;
+    $('size').value = state.size; $('sizeOut').textContent = state.size + '%';
+    updatePct($('cols')); updatePct($('size'));
+    var steps = document.querySelectorAll('.step');
+    for (var q = 0; q < steps.length; q++) {
+      var inp = $(steps[q].dataset.for), d = +steps[q].dataset.d;
+      steps[q].disabled = d < 0 ? +inp.value <= +inp.min : +inp.value >= +inp.max;
+    }
+  }
+  $('cols').addEventListener('input', function (e) { state.cols = +e.target.value; showSliders(); draw(); });
+  $('size').addEventListener('input', function (e) { state.size = +e.target.value; showSliders(); draw(); });
+  (function wireSteps() {
+    var steps = document.querySelectorAll('.step');
+    for (var q = 0; q < steps.length; q++) {
+      steps[q].addEventListener('click', function (e) {
+        var b = e.currentTarget, inp = $(b.dataset.for);
+        var by = inp.id === 'size' ? 4 : 1;
+        var v = Math.min(+inp.max, Math.max(+inp.min, +inp.value + by * +b.dataset.d));
+        inp.value = v;
+        inp.dispatchEvent(new Event('input'));
+      });
+    }
+  })();
+  $('reset').addEventListener('click', function () { painted.clear(); turns.clear(); draw(); });
+
+  /* ---------- ripple ---------- */
+  var raf = 0, lastFrame = 0;
+  function loop(ts) {
+    if (!state.ripple) { raf = 0; return; }
+    if (ts - lastFrame > 33) { lastFrame = ts; draw(ts); }
+    raf = requestAnimationFrame(loop);
+  }
+  var rippleBtn = $('ripple');
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    rippleBtn.disabled = true;
+    rippleBtn.title = 'Motion is turned off in your device settings';
+  }
+  rippleBtn.addEventListener('click', function () {
+    state.ripple = !state.ripple;
+    rippleBtn.setAttribute('aria-pressed', String(state.ripple));
+    if (state.ripple && !raf) raf = requestAnimationFrame(loop);
+    if (!state.ripple) draw();
+  });
+
+  /* ---------- surprise me ---------- */
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function surprise() {
+    var pal; do { pal = Math.floor(Math.random() * PALETTES.length); } while (pal === state.pal);
+    state.pal = pal;
+    var n = Math.random() < 0.5 ? 1 : 2 + Math.floor(Math.random() * 4);
+    state.sel = [];
+    while (state.sel.length < n) {
+      var m = Math.floor(Math.random() * MOTIFS.length);
+      if (state.sel.indexOf(m) < 0) state.sel.push(m);
+    }
+    state.brush = state.sel[0];
+    state.mode = n === 1 ? 'fill' : (n <= 3 ? 'mix3' : 'mix5');
+    state.mixRule = pick(MIXES)[0];
+    state.cats = [];
+    state.sel.forEach(function (m) { var c = MOTIFS[m].cat || 'shapes'; if (state.cats.indexOf(c) < 0) state.cats.push(c); });
+    state.cat0 = state.cats[0];
+    state.layout = pick(LAYOUTS)[0];
+    state.turn = pick(TURNS)[0];
+    state.cols = 3 + Math.floor(Math.random() * 8);
+    state.size = 60 + 2 * Math.floor(Math.random() * 18);
+    state.style = Math.random() < 0.7 ? 'flat' : 'emboss';
+    state.seed = Math.floor(Math.random() * 1e6);
+    painted.clear(); turns.clear();
+    if (n === 1 && Math.random() < 0.5) {
+      var second; do { second = Math.floor(Math.random() * MOTIFS.length); } while (second === state.sel[0]);
+      var checker = Math.random() < 0.5;
+      for (var r = -2; r <= 40; r++) {
+        for (var c = -2; c <= 40; c++) {
+          if (checker ? ((r + c) & 1) : (r & 1)) painted.set(r + ',' + c, second);
+        }
+      }
+    }
+    syncUI();
+    draw();
+  }
+  $('surprise').addEventListener('click', surprise);
+
+  /* ---------- sheet shape ---------- */
+  function applyFormat() {
+    var f = fmtOf(state.format);
+    if (f[2]) {
+      sheetBox.classList.add('fixed');
+      sheetBox.style.setProperty('--ar', f[2] + ' / ' + f[3]);
+    } else {
+      sheetBox.classList.remove('fixed');
+      sheetBox.style.removeProperty('--ar');
+    }
+    resize();
+  }
+
+  /* ---------- saving ---------- */
+  var downloads = null;
+  var saveMsg = $('saveMsg'), pngBtn = $('savePng'), gifBtn = $('saveGif');
+  var sayTimer = 0;
+  function say(t) {
+    saveMsg.textContent = t || '';
+    clearTimeout(sayTimer);
+    if (t) sayTimer = setTimeout(function () { saveMsg.textContent = ''; }, 6000);
+  }
+  function exportSize(longEdge) {
+    var f = fmtOf(state.format), w = f[2], h = f[3];
+    if (!w) { w = canvas.width; h = canvas.height; }
+    var k = longEdge ? Math.min(1, longEdge / Math.max(w, h)) : 1;
+    return [Math.max(2, Math.round(w * k)), Math.max(2, Math.round(h * k))];
+  }
+  function stamp() { return fmtOf(state.format)[0]; }
+  function handleSaveError(e) {
+    var code = e && e.code;
+    if (code === 'declined') say('Not saved.');
+    else if (code === 'rate_limited') say('Another save is waiting. Answer it first, then try again.');
+    else if (code === 'too_large') say('The file is too large. Try the Square or Fit screen shape.');
+    else say('Saving did not work here.');
+  }
+  /* Inside the Android app a small native bridge saves the file into the gallery. */
+  function androidSaver() {
+    if (!window.AndroidSave) return null;
+    return {
+      save: function (req) {
+        return new Promise(function (resolve, reject) {
+          var fr = new FileReader();
+          fr.onload = function () {
+            try {
+              var b64 = String(fr.result).split(',')[1] || '';
+              var mime = /\.gif$/i.test(req.filename) ? 'image/gif' : 'image/png';
+              if (window.AndroidSave.save(req.filename, mime, b64)) resolve({ status: 'saved' });
+              else reject({ code: 'unavailable' });
+            } catch (e) { reject({ code: 'unavailable' }); }
+          };
+          fr.onerror = function () { reject({ code: 'bad_request' }); };
+          fr.readAsDataURL(req.data);
+        });
+      }
+    };
+  }
+  function tryDownloads() {
+    if (downloads) return Promise.resolve(downloads);
+    var native = androidSaver();
+    if (native) { downloads = native; return Promise.resolve(native); }
+    if (!(window.claude && window.claude.use)) return Promise.resolve(null);
+    return window.claude.use('downloads').then(function (d) { downloads = d; return d; }, function () { return null; });
+  }
+  tryDownloads().then(function (d) {
+    if (!d) { pngBtn.disabled = true; gifBtn.disabled = true; pngBtn.title = gifBtn.title = 'Saving is not available in this view'; }
+  });
+  pngBtn.addEventListener('click', function () {
+    tryDownloads().then(function (d) {
+      if (!d) { say('Saving is not available in this view.'); return; }
+      var wh = exportSize(0), cv = document.createElement('canvas');
+      cv.width = wh[0]; cv.height = wh[1];
+      var g = cv.getContext('2d');
+      var scale = getDpr() * wh[0] / Math.max(1, canvas.width);
+      paintSheet(g, wh[0], wh[1], 0, scale, false, false);
+      say('Making the picture…');
+      cv.toBlob(function (blob) {
+        if (!blob) { say('Could not make the picture.'); return; }
+        d.save({ filename: 'pattern-roll-' + stamp() + '.png', data: blob }).then(
+          function () { say('Picture saved.'); }, handleSaveError);
+      }, 'image/png');
+    });
+  });
+  var GIF_FRAMES = 30;
+  gifBtn.addEventListener('click', function () {
+    tryDownloads().then(function (d) {
+      if (!d) { say('Saving is not available in this view.'); return; }
+      gifBtn.disabled = true; pngBtn.disabled = true;
+      var wh = exportSize(600), W = wh[0], H = wh[1];
+      var cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      var g = cv.getContext('2d', { willReadFrequently: true });
+      var scale = getDpr() * W / Math.max(1, canvas.width);
+      var period = 2 * Math.PI * RIPPLE_MS;
+      function frameData(i) {
+        paintSheet(g, W, H, i * period / GIF_FRAMES, scale, true, false);
+        return g.getImageData(0, 0, W, H).data;
+      }
+      var P = null, out = [], i = 0;
+      function done(e) { gifBtn.disabled = false; pngBtn.disabled = false; if (e) handleSaveError(e); }
+      function step() {
+        try {
+          if (!P) {
+            say('Choosing colours…');
+            P = gifPalette([frameData(0), frameData(Math.round(GIF_FRAMES / 3)), frameData(Math.round(2 * GIF_FRAMES / 3))]);
+            gifHeader(W, H, P, out);
+            return setTimeout(step, 0);
+          }
+          if (i < GIF_FRAMES) {
+            say('Making frame ' + (i + 1) + ' of ' + GIF_FRAMES + '…');
+            gifFrame(W, H, frameData(i), P, 9, out);
+            i++;
+            return setTimeout(step, 0);
+          }
+          out.push(0x3B);
+          var blob = new Blob([new Uint8Array(out)], { type: 'image/gif' });
+          say('Ready to save…');
+          d.save({ filename: 'pattern-roll-' + stamp() + '.gif', data: blob }).then(
+            function () { say('Animation saved (' + W + ' × ' + H + ', loops forever).'); done(); }, done);
+        } catch (err) {
+          say('Could not make the animation.'); done();
+        }
+      }
+      step();
+    });
+  });
+
+  /* ---------- sizing ---------- */
+  function resize() {
+    var r = sheetBox.getBoundingClientRect();
+    var dpr = getDpr();
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    draw();
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(resize).observe(sheetBox);
+    new ResizeObserver(renderIcons).observe(tray);
+  } else {
+    window.addEventListener('resize', function () { resize(); renderIcons(); });
+  }
+  fillIcons();
+  syncUI();
+  resize();
+})();
+</script>
+
+</body></html>
